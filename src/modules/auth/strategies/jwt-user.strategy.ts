@@ -18,8 +18,8 @@ export class JwtUserStrategy extends PassportStrategy(Strategy, 'authUser') {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: configService.get('development.jwt.privateKey'),
-      // secretOrKey: configService.get('production.jwt.privateKey'),
+      // secretOrKey: configService.get('development.jwt.privateKey'),
+      secretOrKey: configService.get('production.jwt.privateKey'),
     });
   }
 
