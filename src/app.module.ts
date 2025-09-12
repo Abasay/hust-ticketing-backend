@@ -2,6 +2,8 @@
 import { Module, ValidationError, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
+import { HttpModule } from '@nestjs/axios';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import * as path from 'path';
@@ -26,6 +28,7 @@ import { TicketsModule } from './modules/tickets/tickets.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { RedemptionsModule } from './modules/redemptions/redemptions.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { CronJobService } from './services/cron-job.service';
 
 dotenv.config();
 @Module({
@@ -35,6 +38,8 @@ dotenv.config();
       envFilePath: path.resolve(__dirname, './../../.env'),
       load: process.env.NODE_ENV === 'development' ? [developmentConfig] : [productionConfig],
     }),
+    ScheduleModule.forRoot(),
+    HttpModule,
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -96,6 +101,7 @@ dotenv.config();
   controllers: [AppController],
   providers: [
     AppService,
+    CronJobService,
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_FILTER, useClass: ValidationExceptionFilter },
     { provide: APP_FILTER, useClass: BadRequestExceptionFilter },

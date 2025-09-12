@@ -12,7 +12,7 @@ async function bootstrap() {
   // app.use(cookieParser());
 
   app.enableCors({
-    origin: 'http://localhost:8080', // your frontend origin
+    origin: '*', // your frontend origin
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     // credentials: true, // if you're using cookies
   });
