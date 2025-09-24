@@ -29,6 +29,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { RedemptionsModule } from './modules/redemptions/redemptions.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { CronJobService } from './services/cron-job.service';
+import { FoodstuffsModule } from './modules/foodstuffs/foodstuffs.module';
 
 dotenv.config();
 @Module({
@@ -96,6 +97,7 @@ dotenv.config();
     TransactionsModule,
     RedemptionsModule,
     ReportsModule,
+    FoodstuffsModule,
     // Application Modules Go Here
   ],
   controllers: [AppController],

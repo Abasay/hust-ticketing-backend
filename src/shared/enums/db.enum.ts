@@ -5,4 +5,6 @@ export const Repositories = {
   TransactionRepository: 'TransactionRepository',
   RedemptionRepository: 'RedemptionRepository',
   ReportRepository: 'ReportRepository',
+  FoodstuffRepository: 'FoodstuffRepository',
+  FoodstuffHistoryRepository: 'FoodstuffHistoryRepository',
 };

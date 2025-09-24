@@ -40,6 +40,16 @@ import { DatabaseModelNames } from 'src/shared/constants';
       useFactory: (reportModel) => new BaseRepository(reportModel),
       inject: [getModelToken(DatabaseModelNames.REPORT)],
     },
+    {
+      provide: Repositories.FoodstuffRepository,
+      useFactory: (foodstuffModel) => new BaseRepository(foodstuffModel),
+      inject: [getModelToken(DatabaseModelNames.FOODSTUFF)],
+    },
+    {
+      provide: Repositories.FoodstuffHistoryRepository,
+      useFactory: (foodstuffHistoryModel) => new BaseRepository(foodstuffHistoryModel),
+      inject: [getModelToken(DatabaseModelNames.FOODSTUFF_HISTORY)],
+    },
   ],
   exports: [...Object.values(Repositories)],
 })

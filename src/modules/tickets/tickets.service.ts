@@ -1,6 +1,6 @@
 import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
 import { BaseRepository } from '../repository/base.repository';
-import { Repositories } from 'src/shared/enums';
+import { Repositories } from 'src/shared/enums/db.enum';
 import { DatabaseModelNames, TicketStatus, UserRole, PaymentType, TransactionStatus, RedemptionStatus } from 'src/shared/constants';
 import {
   GenerateTicketReqDto,

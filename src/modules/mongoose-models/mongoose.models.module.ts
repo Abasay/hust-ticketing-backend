@@ -1,14 +1,15 @@
-import { MongooseModule } from '@nestjs/mongoose';
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModelNames } from 'src/shared/constants';
 import { UserSchema } from '../user/user.schema';
-import { AuthorizedUserSchema } from '../user/authorized-user.schema';
+
 import { TicketSchema } from '../tickets/ticket.schema';
 import { TransactionSchema } from '../transactions/transaction.schema';
 import { RedemptionSchema } from '../redemptions/redemption.schema';
 import { ReportSchema } from '../reports/report.schema';
-
-// Purpose: Centralized module to manage all Mongoose models and schemas to avoid circular dependencies
+import { FoodstuffSchema } from '../foodstuffs/schemas/foodstuff.schema';
+import { FoodstuffHistorySchema } from '../foodstuffs/schemas/foodstuff-history.schema';
+import { AuthorizedUserSchema } from '../user/authorized-user.schema';
 
 @Module({
   imports: [
@@ -19,6 +20,8 @@ import { ReportSchema } from '../reports/report.schema';
       { name: DatabaseModelNames.TRANSACTION, schema: TransactionSchema },
       { name: DatabaseModelNames.REDEMPTION, schema: RedemptionSchema },
       { name: DatabaseModelNames.REPORT, schema: ReportSchema },
+      { name: DatabaseModelNames.FOODSTUFF, schema: FoodstuffSchema },
+      { name: DatabaseModelNames.FOODSTUFF_HISTORY, schema: FoodstuffHistorySchema },
     ]),
   ],
   exports: [MongooseModule],

@@ -5,6 +5,8 @@ export enum DatabaseModelNames {
   TRANSACTION = 'Transaction',
   REDEMPTION = 'Redemption',
   REPORT = 'Report',
+  FOODSTUFF = 'Foodstuff',
+  FOODSTUFF_HISTORY = 'FoodstuffHistory',
 }
 
 export enum UserRole {
@@ -52,12 +54,23 @@ export enum RedemptionStatus {
   FAILED = 'FAILED',
 }
 
+export enum ActionType {
+  PURCHASE = 'purchase',
+  USAGE = 'usage',
+  WASTAGE = 'wastage',
+  CORRECTION = 'correction',
+}
+
 export const Constants = {
   accessTokenExpiry: '1d',
   refreshTokenExpiry: '7d',
   passwordSaltRounds: 10,
   passwordMinLength: 8,
   lockedAccountTime: 24 * 60 * 60 * 1000,
+  stockThresholds: {
+    low: 10,
+    critical: 0,
+  },
 };
 
 export const COOKIE_NAME = 'refreshToken';
