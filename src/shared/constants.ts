@@ -7,6 +7,9 @@ export enum DatabaseModelNames {
   REPORT = 'Report',
   FOODSTUFF = 'Foodstuff',
   FOODSTUFF_HISTORY = 'FoodstuffHistory',
+  COOKED_FOOD_NAME = 'CookedFoodName',
+  COOKED_FOOD = 'CookedFood',
+  FOODSTUFF_REQUISITION = 'FoodstuffRequisition',
 }
 
 export enum UserRole {

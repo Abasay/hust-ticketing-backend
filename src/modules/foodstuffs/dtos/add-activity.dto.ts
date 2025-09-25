@@ -12,13 +12,13 @@ export class AddActivityReqDto {
   quantityChanged: number;
 
   @ApiProperty({ description: 'Unit cost (required for purchases)', required: false })
-  @ValidateIf(o => o.actionType === ActionType.PURCHASE)
+  @ValidateIf((o) => o.actionType === ActionType.PURCHASE)
   @IsNumber()
   @Min(0)
   unitCost?: number;
 
   @ApiProperty({ description: 'Total cost (required for purchases)', required: false })
-  @ValidateIf(o => o.actionType === ActionType.PURCHASE)
+  @ValidateIf((o) => o.actionType === ActionType.PURCHASE)
   @IsNumber()
   @Min(0)
   totalCost?: number;
@@ -27,6 +27,17 @@ export class AddActivityReqDto {
   @IsString()
   @IsNotEmpty()
   reason: string;
+
+  @ApiProperty({ description: 'Cooked food name ID (required for USAGE activities)', required: false })
+  @ValidateIf((o) => o.actionType === ActionType.USAGE)
+  @IsString()
+  @IsNotEmpty()
+  cookedFoodNameId?: string;
+
+  @ApiProperty({ description: 'Requisition ID if this activity fulfills a requisition', required: false })
+  @IsOptional()
+  @IsString()
+  requisitionId?: string;
 }
 
 export class AddActivityResDto {

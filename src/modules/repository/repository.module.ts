@@ -50,6 +50,21 @@ import { DatabaseModelNames } from 'src/shared/constants';
       useFactory: (foodstuffHistoryModel) => new BaseRepository(foodstuffHistoryModel),
       inject: [getModelToken(DatabaseModelNames.FOODSTUFF_HISTORY)],
     },
+    {
+      provide: Repositories.CookedFoodNameRepository,
+      useFactory: (cookedFoodNameModel) => new BaseRepository(cookedFoodNameModel),
+      inject: [getModelToken(DatabaseModelNames.COOKED_FOOD_NAME)],
+    },
+    {
+      provide: Repositories.CookedFoodRepository,
+      useFactory: (cookedFoodModel) => new BaseRepository(cookedFoodModel),
+      inject: [getModelToken(DatabaseModelNames.COOKED_FOOD)],
+    },
+    {
+      provide: Repositories.FoodstuffRequisitionRepository,
+      useFactory: (foodstuffRequisitionModel) => new BaseRepository(foodstuffRequisitionModel),
+      inject: [getModelToken(DatabaseModelNames.FOODSTUFF_REQUISITION)],
+    },
   ],
   exports: [...Object.values(Repositories)],
 })

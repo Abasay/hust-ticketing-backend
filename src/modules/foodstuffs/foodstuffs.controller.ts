@@ -56,7 +56,7 @@ export class FoodstuffsController {
   @Get('stock-alerts')
   @ApiOperation({ summary: 'Get current stock alerts' })
   @ApiResponse({ status: 200, description: 'Stock alerts retrieved successfully', type: StockAlertsResDto })
-  async getStockAlerts(): Promise<StockAlertsResDto> {
+  async getStockAlerts() {
     return this.foodstuffsService.getStockAlerts();
   }
 
@@ -71,7 +71,7 @@ export class FoodstuffsController {
   @ApiOperation({ summary: 'Get a specific foodstuff by ID' })
   @ApiResponse({ status: 200, description: 'Foodstuff retrieved successfully', type: GetFoodstuffResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
-  async getFoodstuffById(@Param('id') id: string): Promise<GetFoodstuffResDto> {
+  async getFoodstuffById(@Param('id') id: string) {
     return this.foodstuffsService.getFoodstuffById(id);
   }
 

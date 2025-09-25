@@ -7,3 +7,7 @@ export * from './get-activities.dto';
 export * from './dashboard.dto';
 export * from './stock-alerts.dto';
 export * from './reports.dto';
+export * from './cooked-food-name.dto';
+export * from './cooked-food.dto';
+export * from './cooked-food-dashboard.dto';
+export * from './foodstuff.dto';

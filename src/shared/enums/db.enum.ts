@@ -7,4 +7,7 @@ export const Repositories = {
   ReportRepository: 'ReportRepository',
   FoodstuffRepository: 'FoodstuffRepository',
   FoodstuffHistoryRepository: 'FoodstuffHistoryRepository',
+  CookedFoodNameRepository: 'CookedFoodNameRepository',
+  CookedFoodRepository: 'CookedFoodRepository',
+  FoodstuffRequisitionRepository: 'FoodstuffRequisitionRepository',
 };

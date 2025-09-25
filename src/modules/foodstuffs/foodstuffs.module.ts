@@ -7,23 +7,26 @@ import { getModelToken } from '@nestjs/mongoose';
 import { DatabaseModelNames } from 'src/shared/constants';
 import { Repositories } from 'src/shared/enums';
 import { RepositoryModule } from '../repository/repository.module';
+import { CookedFoodNamesService } from './cooked-food-names.service';
+import { CookedFoodsService } from './cooked-foods.service';
+import { CookedFoodNamesController } from './cooked-food-names.controller';
+import { CookedFoodsController } from './cooked-foods.controller';
+import { RequisitionsService } from './requisitions.service';
+import { RequisitionsController } from './requisitions.controller';
 
 @Module({
   imports: [MongooseModelsModule, RepositoryModule],
-  controllers: [FoodstuffsController],
+  controllers: [FoodstuffsController, CookedFoodNamesController, CookedFoodsController, RequisitionsController],
   providers: [
     FoodstuffsService,
-    // {
-    //   provide: Repositories.FOODSTUFF_REPOSITORY,
-    //   useFactory: (model) => new BaseRepository(model),
-    //   inject: [getModelToken(DatabaseModelNames.FOODSTUFF)],
-    // },
-    // {
-    //   provide: Repositories.FOODSTUFF_HISTORY_REPOSITORY,
-    //   useFactory: (model) => new BaseRepository(model),
-    //   inject: [getModelToken(DatabaseModelNames.FOODSTUFF_HISTORY)],
-    // },
+    CookedFoodNamesService,
+    CookedFoodsService,
+    RequisitionsService,
+    {
+      provide: Repositories.FoodstuffRequisitionRepository,
+      useFactory: (model) => new BaseRepository(model),
+      inject: [getModelToken(DatabaseModelNames.FOODSTUFF_REQUISITION)],
+    },
   ],
-  exports: [FoodstuffsService],
 })
 export class FoodstuffsModule {}

@@ -33,6 +33,14 @@ export class FoodstuffHistory extends Document {
 
   @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.USER, required: true })
   doneBy: Types.ObjectId;
+
+  // New field: Link to cooked food name for USAGE activities
+  @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.COOKED_FOOD_NAME })
+  cookedFoodNameId?: Types.ObjectId;
+
+  // New field: Link to requisition if this activity fulfills a requisition
+  @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.FOODSTUFF_REQUISITION })
+  requisitionId?: Types.ObjectId;
 }
 
 export const FoodstuffHistorySchema = SchemaFactory.createForClass(FoodstuffHistory);

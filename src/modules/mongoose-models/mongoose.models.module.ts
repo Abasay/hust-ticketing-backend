@@ -10,6 +10,9 @@ import { ReportSchema } from '../reports/report.schema';
 import { FoodstuffSchema } from '../foodstuffs/schemas/foodstuff.schema';
 import { FoodstuffHistorySchema } from '../foodstuffs/schemas/foodstuff-history.schema';
 import { AuthorizedUserSchema } from '../user/authorized-user.schema';
+import { CookedFoodNameSchema } from '../foodstuffs/schemas/cooked-food-name.schema';
+import { CookedFoodSchema } from '../foodstuffs/schemas/cooked-food.schema';
+import { FoodstuffRequisitionSchema } from '../foodstuffs/schemas/foodstuff-requisition.schema';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { AuthorizedUserSchema } from '../user/authorized-user.schema';
       { name: DatabaseModelNames.REPORT, schema: ReportSchema },
       { name: DatabaseModelNames.FOODSTUFF, schema: FoodstuffSchema },
       { name: DatabaseModelNames.FOODSTUFF_HISTORY, schema: FoodstuffHistorySchema },
+      { name: DatabaseModelNames.COOKED_FOOD_NAME, schema: CookedFoodNameSchema },
+      { name: DatabaseModelNames.COOKED_FOOD, schema: CookedFoodSchema },
+      { name: DatabaseModelNames.FOODSTUFF_REQUISITION, schema: FoodstuffRequisitionSchema },
     ]),
   ],
   exports: [MongooseModule],

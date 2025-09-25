@@ -10,18 +10,25 @@ import {
   GenerateReportReqDto,
   ReportType,
   GroupBy,
+  GetFoodstuffReqDto,
+  CreateFoodstuffResDto,
 } from './dtos';
+import { CookedFoodName } from './schemas/cooked-food-name.schema';
+import { FoodstuffHistory } from './schemas/foodstuff-history.schema';
+import { Foodstuff } from './schemas/foodstuff.schema';
 
 @Injectable()
 export class FoodstuffsService {
   constructor(
     @Inject(Repositories.FoodstuffRepository)
-    private readonly foodstuffRepository: BaseRepository<any>,
+    private readonly foodstuffRepository: BaseRepository<Foodstuff>,
     @Inject(Repositories.FoodstuffHistoryRepository)
-    private readonly foodstuffHistoryRepository: BaseRepository<any>,
+    private readonly foodstuffHistoryRepository: BaseRepository<FoodstuffHistory>,
+    @Inject(Repositories.CookedFoodNameRepository)
+    private readonly cookedFoodNameRepository: BaseRepository<CookedFoodName>,
   ) {}
 
-  async createFoodstuff(createFoodstuffDto: CreateFoodstuffReqDto) {
+  async createFoodstuff(createFoodstuffDto: CreateFoodstuffReqDto): Promise<any> {
     const existingFoodstuff = await this.foodstuffRepository.findOne({
       name: { $regex: new RegExp(`^${createFoodstuffDto.name}$`, 'i') },
     });
@@ -41,8 +48,8 @@ export class FoodstuffsService {
     };
   }
 
-  async getAllFoodstuffs(query: any) {
-    const { page = 1, limit = 10, search, unit, lowStock, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  async getAllFoodstuffs(query: GetFoodstuffReqDto) {
+    const { page = 1, limit = 10, search, unit, lowStock, sortBy = 'name', sortOrder = 'asc' } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
@@ -55,27 +62,30 @@ export class FoodstuffsService {
       filter.unit = unit;
     }
 
-    if (lowStock === 'true') {
+    if (lowStock) {
       filter.currentQuantity = { $lte: Constants.stockThresholds.low };
     }
 
     const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
 
     const [foodstuffs, total] = await Promise.all([
-      this.foodstuffRepository.findAll(filter, skip, limit, sort as any),
+      this.foodstuffRepository.findAll(filter, skip, limit, sort),
       this.foodstuffRepository.count(filter),
     ]);
+
+    const totalPages = Math.ceil(total / limit);
+    const currentPage = page;
 
     return {
       message: 'Foodstuffs retrieved successfully',
       data: {
         foodstuffs,
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
-        hasNext: page * limit < total,
-        hasPrev: page > 1,
+        page: currentPage,
+        limit: limit,
+        totalPages,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1,
       },
     };
   }
@@ -88,7 +98,7 @@ export class FoodstuffsService {
 
     return {
       message: 'Foodstuff retrieved successfully',
-      foodstuff,
+      data: foodstuff,
     };
   }
 
@@ -150,6 +160,19 @@ export class FoodstuffsService {
       }
     }
 
+    // Validate usage activity - must have cookedFoodNameId
+    if (addActivityDto.actionType === ActionType.USAGE) {
+      if (!addActivityDto.cookedFoodNameId) {
+        throw new BadRequestException('Cooked food name ID is required for usage activities');
+      }
+
+      // Verify cooked food name exists
+      const cookedFoodName = await this.cookedFoodNameRepository.findOne({ _id: addActivityDto.cookedFoodNameId });
+      if (!cookedFoodName) {
+        throw new NotFoundException('Cooked food name not found');
+      }
+    }
+
     // Check for negative stock
     const newQuantity = foodstuff.currentQuantity + addActivityDto.quantityChanged;
     if (newQuantity < 0) {
@@ -157,11 +180,23 @@ export class FoodstuffsService {
     }
 
     // Create activity record
-    const activity = await this.foodstuffHistoryRepository.create({
+    const activityData: any = {
       foodstuffId,
       ...addActivityDto,
       doneBy: userId,
-    });
+    };
+
+    // Add cookedFoodNameId for usage activities
+    if (addActivityDto.actionType === ActionType.USAGE && addActivityDto.cookedFoodNameId) {
+      activityData.cookedFoodNameId = addActivityDto.cookedFoodNameId;
+    }
+
+    // Add requisitionId if provided
+    if (addActivityDto.requisitionId) {
+      activityData.requisitionId = addActivityDto.requisitionId;
+    }
+
+    const activity = await this.foodstuffHistoryRepository.create(activityData);
 
     // Update foodstuff
     const updatedData: any = {
@@ -177,10 +212,11 @@ export class FoodstuffsService {
 
     const updatedFoodstuff = await this.foodstuffRepository.update({ _id: foodstuffId }, updatedData);
 
-    const populatedActivity = await this.foodstuffHistoryRepository.findAllAndPopulate(
-      { _id: activity._id },
+    const populatedActivity = await this.foodstuffHistoryRepository.findAllAndPopulate({ _id: activity._id }, [
       { path: 'doneBy', select: 'firstName lastName email' },
-    );
+      { path: 'cookedFoodNameId', select: 'name description' },
+      { path: 'requisitionId', select: 'requisitionNumber' },
+    ]);
 
     return {
       message: 'Activity added successfully',
@@ -216,16 +252,19 @@ export class FoodstuffsService {
       this.foodstuffHistoryRepository.count(filter),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const currentPage = page;
+
     return {
       message: 'Activities retrieved successfully',
       data: {
         activities,
         total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / limit),
-        hasNext: page * limit < total,
-        hasPrev: page > 1,
+        page: currentPage,
+        limit: limit,
+        totalPages,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1,
       },
     };
   }
@@ -413,7 +452,7 @@ export class FoodstuffsService {
     const totalSpent = purchases.reduce((sum, purchase) => sum + (purchase.totalCost || 0), 0);
 
     const byFoodstuff = purchases.reduce((acc, purchase) => {
-      const name = purchase.foodstuffId?.name || 'Unknown';
+      const name = (purchase.foodstuffId as any)?.name || 'Unknown';
       acc[name] = (acc[name] || 0) + (purchase.totalCost || 0);
       return acc;
     }, {});

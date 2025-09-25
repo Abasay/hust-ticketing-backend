@@ -4,7 +4,7 @@ import { Model, FilterQuery, UpdateQuery } from 'mongoose';
 export class BaseRepository<T> {
   constructor(private readonly model: Model<T>) {}
 
-  async findAll(filter: FilterQuery<T> = {}, skip?: number, limit?: number, sort?: Record<string, 1 | -1>): Promise<T[]> {
+  async findAll(filter: FilterQuery<T> = {}, skip?: number, limit?: number, sort?: Record<string, 1 | -1> | any): Promise<T[]> {
     return this.model
       .find(filter)
       .skip(skip || 0)
@@ -41,7 +41,7 @@ export class BaseRepository<T> {
             select: string;
           };
         }[],
-    sort?: Record<string, 1 | -1>,
+    sort?: Record<string, 1 | -1> | any,
     skip?: number,
     limit?: number,
   ): Promise<T[]> {
@@ -139,5 +139,9 @@ export class BaseRepository<T> {
 
   async count(filter: FilterQuery<T> = {}): Promise<number> {
     return this.model.countDocuments(filter).exec();
+  }
+
+  async aggregate(pipeline: any[]): Promise<any[]> {
+    return this.model.aggregate(pipeline).exec();
   }
 }
