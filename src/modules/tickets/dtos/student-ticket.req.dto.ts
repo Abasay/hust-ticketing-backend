@@ -65,14 +65,14 @@ export class StudentBulkPurchaseReqDto {
   @Min(1)
   amount: number;
 
-  @ApiProperty({
-    description: 'Payment method used',
-    enum: PaymentType,
-    example: PaymentType.CASH,
-  })
-  @IsNotEmpty()
-  @IsEnum(PaymentType)
-  paymentType: string;
+  // @ApiProperty({
+  //   description: 'Payment method used',
+  //   enum: PaymentType,
+  //   example: PaymentType.CASH,
+  // })
+  // @IsNotEmpty()
+  // @IsEnum(PaymentType)
+  // paymentType: string;
 }
 
 export class StudentWalletTicketReqDto {

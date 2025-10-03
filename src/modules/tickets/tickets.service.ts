@@ -20,11 +20,22 @@ import {
   VendorRedeemedTicketsResDto,
   CashierIssuedStatsResDto,
   VendorRedeemedStatsResDto,
+  StudentBulkPurchaseReqDto,
+  StudentBulkPurchaseResDto,
+  StudentWalletTicketReqDto,
+  StudentWalletTicketResDto,
+  FacultyTicketReqDto,
+  FacultyTicketResDto,
+  GetStaffTicketsReqDto,
+  StudentTicketReqDto,
+  StudentTicketResDto,
 } from './dtos';
 import { Ticket } from './ticket.schema';
 import { User } from '../user/user.schema';
 import { Transaction } from '../transactions/transaction.schema';
 import { Redemption } from '../redemptions/redemption.schema';
+import { Wallet } from '../wallet/wallet.schema';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class TicketsService {
@@ -37,6 +48,8 @@ export class TicketsService {
     private readonly transactionRepository: BaseRepository<Transaction>,
     @Inject(Repositories.RedemptionRepository)
     private readonly redemptionRepository: BaseRepository<Redemption>,
+    @Inject(Repositories.WalletRepository)
+    private readonly walletRepository: BaseRepository<Wallet>,
   ) {}
 
   private generateTicketNumber(): string {
@@ -814,6 +827,260 @@ export class TicketsService {
         ticketsRedeemed,
         totalAmount: Math.round(totalAmount),
         averageAmount: Math.round(averageAmount),
+      },
+    };
+  }
+
+  // Student ticket purchase (single purchase)
+  async generateStudentTicket(studentTicketDto: StudentTicketReqDto, cashierId: string): Promise<StudentTicketResDto> {
+    // Find or create student
+    let student = await this.userRepository.findOne({ matricNumber: studentTicketDto.matricNumber });
+
+    if (!student) {
+      student = await this.userRepository.create({
+        firstName: 'Student',
+        lastName: studentTicketDto.matricNumber,
+        email: `${studentTicketDto.matricNumber}@temp.edu`,
+        password: null,
+        role: UserRole.STUDENT,
+        matricNumber: studentTicketDto.matricNumber,
+        isAccountLocked: true,
+      });
+    }
+
+    // Generate ticket using existing logic
+    const generateTicketDto: GenerateTicketReqDto = {
+      userId: (student._id as any).toString(),
+      ticketType: studentTicketDto.ticketType,
+      amount: studentTicketDto.amount,
+      paymentType: studentTicketDto.paymentType,
+      expiryDate: studentTicketDto.expiryDate,
+    };
+
+    const result = await this.generateTicket(generateTicketDto, cashierId);
+
+    return {
+      message: 'Student ticket generated successfully',
+      ticket: {
+        ...result.ticket,
+        student: {
+          _id: (student._id as any).toString(),
+          matricNumber: student?.matricNumber || 'N/A',
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+        },
+      },
+    };
+  }
+
+  // Student wallet funding (bulk purchase)
+  async fundStudentWallet(bulkPurchaseDto: StudentBulkPurchaseReqDto, cashierId: string): Promise<StudentBulkPurchaseResDto> {
+    // Find or create student
+    let student = await this.userRepository.findOne({ matricNumber: bulkPurchaseDto.matricNumber });
+
+    if (!student) {
+      student = await this.userRepository.create({
+        firstName: 'Student',
+        lastName: bulkPurchaseDto.matricNumber,
+        email: `${bulkPurchaseDto.matricNumber}@temp.edu`,
+        password: null,
+        role: UserRole.STUDENT,
+        matricNumber: bulkPurchaseDto.matricNumber,
+        isAccountLocked: true,
+      });
+    }
+
+    // Find or create wallet
+    let wallet = await this.walletRepository.findOne({ userId: student._id });
+
+    if (!wallet) {
+      wallet = await this.walletRepository.create({
+        userId: new Types.ObjectId(student._id as string),
+        walletBalance: bulkPurchaseDto.amount,
+        walletUsed: 0,
+      });
+    } else {
+      wallet = await this.walletRepository.findOneAndUpdate(
+        { userId: student._id },
+        { $inc: { walletBalance: bulkPurchaseDto.amount } },
+        { new: true },
+      );
+    }
+
+    return {
+      message: 'Wallet topped up successfully',
+      wallet: {
+        matricNumber: student.matricNumber || 'N/A',
+        walletBalance: wallet?.walletBalance || 0,
+        walletUsed: wallet?.walletUsed || 0,
+        availableBalance: (wallet?.walletBalance || 0) - (wallet?.walletUsed || 0),
+      },
+    };
+  }
+
+  // Ticket purchase using wallet
+  async generateTicketFromWallet(walletTicketDto: StudentWalletTicketReqDto, cashierId: string): Promise<StudentWalletTicketResDto> {
+    // Find student
+    const student = await this.userRepository.findOne({ matricNumber: walletTicketDto.matricNumber });
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    // Find wallet
+    const wallet = await this.walletRepository.findOne({ userId: student._id });
+    if (!wallet) {
+      throw new NotFoundException('Student wallet not found');
+    }
+
+    // Check available balance
+    const availableBalance = wallet.walletBalance - wallet.walletUsed;
+    if (availableBalance < walletTicketDto.amount) {
+      throw new BadRequestException('Insufficient wallet balance');
+    }
+
+    // Update wallet
+    const updatedWallet = await this.walletRepository.findOneAndUpdate(
+      { userId: student._id },
+      { $inc: { walletUsed: walletTicketDto.amount } },
+      { new: true },
+    );
+
+    // Generate ticket
+    const generateTicketDto: GenerateTicketReqDto = {
+      userId: (student._id as any).toString(),
+      ticketType: walletTicketDto.ticketType,
+      amount: walletTicketDto.amount,
+      paymentType: PaymentType.WALLET,
+      expiryDate: walletTicketDto.expiryDate,
+    };
+
+    const result = await this.generateTicket(generateTicketDto, cashierId);
+
+    return {
+      message: 'Ticket purchased from wallet successfully',
+      data: {
+        ticket: {
+          ticketNo: result.ticket.ticketNo,
+          ticketType: result.ticket.ticketType,
+          amount: result.ticket.amount,
+          status: result.ticket.status,
+          expiryDate: result.ticket.expiryDate,
+        },
+        wallet: {
+          walletBalance: updatedWallet?.walletBalance || 0,
+          walletUsed: updatedWallet?.walletUsed || 0,
+          availableBalance: (updatedWallet?.walletBalance || 0) - (updatedWallet?.walletUsed || 0),
+        },
+      },
+    };
+  }
+
+  // Faculty ticket generation
+  async generateFacultyTickets(facultyTicketDto: FacultyTicketReqDto, cashierId: string): Promise<FacultyTicketResDto> {
+    const { staffIds, ticketType, totalAmount, paymentType, expiryDate } = facultyTicketDto;
+
+    // Validate amount divisibility
+    if (totalAmount % staffIds.length !== 0) {
+      throw new BadRequestException('Total amount must be divisible equally among selected staff');
+    }
+
+    const amountPerTicket = totalAmount / staffIds.length;
+    const tickets: any[] = [];
+
+    for (const staffId of staffIds) {
+      // Find or create staff
+      let staff = await this.userRepository.findOne({ staffId });
+
+      if (!staff) {
+        staff = await this.userRepository.create({
+          firstName: 'Staff',
+          lastName: staffId,
+          email: `${staffId}@temp.edu`,
+          password: null,
+          role: UserRole.STAFF,
+          staffId: staffId,
+          isAccountLocked: true,
+        });
+      }
+
+      // Generate ticket for this staff
+      const generateTicketDto: GenerateTicketReqDto = {
+        userId: (staff._id as any).toString(),
+        ticketType,
+        amount: amountPerTicket,
+        paymentType,
+        expiryDate,
+      };
+
+      const result = await this.generateTicket(generateTicketDto, cashierId);
+
+      tickets.push({
+        ...result.ticket,
+        staff: {
+          _id: (staff._id as any).toString(),
+          staffId: staff.staffId || 'N/A',
+          firstName: staff.firstName,
+          lastName: staff.lastName,
+          email: staff.email,
+        },
+      });
+    }
+
+    return {
+      message: 'Faculty tickets generated successfully',
+      data: {
+        totalTickets: tickets.length,
+        amountPerTicket,
+        tickets,
+      },
+    };
+  }
+
+  // Get staff tickets for printing
+  async getStaffTickets(getStaffTicketsDto: GetStaffTicketsReqDto): Promise<any> {
+    const staff = await this.userRepository.findOne({ staffId: getStaffTicketsDto.staffId });
+    if (!staff) {
+      throw new NotFoundException('Staff not found');
+    }
+
+    const tickets = await this.ticketRepository.findAll({ customer: staff._id });
+
+    if (!tickets) {
+      throw new NotFoundException('No tickets found for this staff');
+    }
+
+    return {
+      message: 'Staff tickets retrieved successfully',
+      tickets: tickets.map((ticket) => ({
+        ticketNo: ticket.ticketNo,
+        ticketType: ticket.ticketType,
+        amount: ticket.amount,
+        status: ticket.status,
+        expiryDate: ticket.expiryDate,
+        createdAt: (ticket as any).createdAt,
+      })),
+    };
+  }
+
+  async getStudentWalletBalance(matricNumber: string): Promise<StudentBulkPurchaseResDto> {
+    const student = await this.userRepository.findOne({ matricNumber });
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    const wallet = await this.walletRepository.findOne({ userId: student._id });
+    if (!wallet) {
+      throw new NotFoundException('Student wallet not found');
+    }
+
+    return {
+      message: 'Student wallet balance retrieved successfully',
+      wallet: {
+        matricNumber: student.matricNumber || 'N/A',
+        walletBalance: wallet?.walletBalance || 0,
+        walletUsed: wallet?.walletUsed || 0,
+        availableBalance: (wallet?.walletBalance || 0) - (wallet?.walletUsed || 0),
       },
     };
   }

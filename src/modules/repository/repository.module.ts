@@ -65,6 +65,11 @@ import { DatabaseModelNames } from 'src/shared/constants';
       useFactory: (foodstuffRequisitionModel) => new BaseRepository(foodstuffRequisitionModel),
       inject: [getModelToken(DatabaseModelNames.FOODSTUFF_REQUISITION)],
     },
+    {
+      provide: Repositories.WalletRepository,
+      useFactory: (walletModel) => new BaseRepository(walletModel),
+      inject: [getModelToken(DatabaseModelNames.WALLET)],
+    },
   ],
   exports: [...Object.values(Repositories)],
 })

@@ -10,6 +10,7 @@ export enum DatabaseModelNames {
   COOKED_FOOD_NAME = 'CookedFoodName',
   COOKED_FOOD = 'CookedFood',
   FOODSTUFF_REQUISITION = 'FoodstuffRequisition',
+  WALLET = 'Wallet',
 }
 
 export enum UserRole {

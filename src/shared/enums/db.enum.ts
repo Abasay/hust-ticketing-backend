@@ -10,4 +10,5 @@ export const Repositories = {
   CookedFoodNameRepository: 'CookedFoodNameRepository',
   CookedFoodRepository: 'CookedFoodRepository',
   FoodstuffRequisitionRepository: 'FoodstuffRequisitionRepository',
+  WalletRepository: 'WalletRepository',
 };

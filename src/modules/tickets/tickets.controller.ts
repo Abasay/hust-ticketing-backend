@@ -21,6 +21,14 @@ import {
   VendorRedeemedTicketsResDto,
   CashierIssuedStatsResDto,
   VendorRedeemedStatsResDto,
+  StudentTicketReqDto,
+  StudentTicketResDto,
+  StudentBulkPurchaseReqDto,
+  StudentBulkPurchaseResDto,
+  StudentWalletTicketReqDto,
+  StudentWalletTicketResDto,
+  FacultyTicketReqDto,
+  FacultyTicketResDto,
 } from './dtos';
 
 @ApiTags('Tickets')
@@ -164,5 +172,66 @@ export class TicketsController {
   @ApiResponse({ status: 403, description: 'Forbidden - Vendor or Admin access required' })
   async getVendorRedeemedStats(@GetUser() user: any): Promise<VendorRedeemedStatsResDto> {
     return this.ticketsService.getVendorRedeemedStats(user._id);
+  }
+
+  // Student endpoints
+  @Post('student/generate')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Generate student ticket (single purchase)' })
+  async generateStudentTicket(
+    @Body(ValidationPipe) studentTicketDto: StudentTicketReqDto,
+    @GetUser() user: any,
+  ): Promise<StudentTicketResDto> {
+    return this.ticketsService.generateStudentTicket(studentTicketDto, user._id);
+  }
+
+  @Post('student/fund-wallet')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Fund student wallet (bulk purchase)' })
+  async fundStudentWallet(
+    @Body(ValidationPipe) bulkPurchaseDto: StudentBulkPurchaseReqDto,
+    @GetUser() user: any,
+  ): Promise<StudentBulkPurchaseResDto> {
+    return this.ticketsService.fundStudentWallet(bulkPurchaseDto, user._id);
+  }
+
+  @Post('student/wallet-purchase')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Purchase ticket using wallet' })
+  async generateTicketFromWallet(
+    @Body(ValidationPipe) walletTicketDto: StudentWalletTicketReqDto,
+    @GetUser() user: any,
+  ): Promise<StudentWalletTicketResDto> {
+    return this.ticketsService.generateTicketFromWallet(walletTicketDto, user._id);
+  }
+
+  @Get('student/wallet/balance/:matricNumber')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Get student wallet balance' })
+  async getStudentWalletBalance(@GetUser() user: any, @Param('matricNumber') matricNumber: string): Promise<StudentBulkPurchaseResDto> {
+    return this.ticketsService.getStudentWalletBalance(matricNumber);
+  }
+
+  // Faculty endpoints
+  @Post('faculty/generate')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Generate faculty tickets' })
+  async generateFacultyTickets(
+    @Body(ValidationPipe) facultyTicketDto: FacultyTicketReqDto,
+    @GetUser() user: any,
+  ): Promise<FacultyTicketResDto> {
+    return this.ticketsService.generateFacultyTickets(facultyTicketDto, user._id);
+  }
+
+  @Get('staff/:staffId')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN, UserRole.VENDOR)
+  @ApiOperation({ summary: 'Get staff tickets for printing' })
+  async getStaffTickets(@Param('staffId') staffId: string) {
+    return this.ticketsService.getStaffTickets({ staffId });
   }
 }

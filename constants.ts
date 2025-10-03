@@ -13,6 +13,7 @@ export enum UserRole {
   VENDOR = 'VENDOR',
   STUDENT = 'STUDENT',
   STAFF = 'STAFF',
+  storeKeeper = 'STORE KEEPER',
 }
 
 export enum AccountStatus {

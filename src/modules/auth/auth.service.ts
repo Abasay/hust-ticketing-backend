@@ -189,6 +189,10 @@ export class AuthService {
       throw UnauthorizedException.UNAUTHORIZED_ACCESS('Invalid credentials');
     }
 
+    if (!user.password) {
+      throw UnauthorizedException.REQUIRED_RE_AUTHENTICATION("Invalid credentials, password isn't set.");
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       if (user.lockedUntil && user.lockedUntil < new Date()) {
@@ -322,6 +326,10 @@ export class AuthService {
 
     if (!user) {
       throw UnauthorizedException.RESOURCE_NOT_FOUND('User not found');
+    }
+
+    if (!user.password) {
+      throw UnauthorizedException.REQUIRED_RE_AUTHENTICATION('Password has not been changed yet. Please login again.');
     }
 
     const isPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password);

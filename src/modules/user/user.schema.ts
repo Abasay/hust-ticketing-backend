@@ -22,8 +22,8 @@ export class User extends Document {
   @Prop({ required: true, unique: true, lowercase: true })
   email: string;
 
-  @Prop({ required: true })
-  password: string; // hash stored
+  @Prop({ required: false, default: null, type: String })
+  password: string | null; // hash stored
 
   @Prop({ enum: Object.values(UserRole), default: UserRole.student })
   role: string;
@@ -37,6 +37,15 @@ export class User extends Document {
 
   @Prop({ type: Number, default: 0 })
   loginAttempts: number;
+
+  @Prop({ unique: true, sparse: true })
+  matricNumber?: string; // for students
+
+  @Prop({ unique: true, sparse: true })
+  staffId?: string; // for staff
+
+  @Prop({ default: false })
+  isAccountLocked: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

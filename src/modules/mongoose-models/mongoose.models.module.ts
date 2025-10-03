@@ -13,6 +13,7 @@ import { AuthorizedUserSchema } from '../user/authorized-user.schema';
 import { CookedFoodNameSchema } from '../foodstuffs/schemas/cooked-food-name.schema';
 import { CookedFoodSchema } from '../foodstuffs/schemas/cooked-food.schema';
 import { FoodstuffRequisitionSchema } from '../foodstuffs/schemas/foodstuff-requisition.schema';
+import { WalletSchema } from '../wallet/wallet.schema';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { FoodstuffRequisitionSchema } from '../foodstuffs/schemas/foodstuff-requ
       { name: DatabaseModelNames.COOKED_FOOD_NAME, schema: CookedFoodNameSchema },
       { name: DatabaseModelNames.COOKED_FOOD, schema: CookedFoodSchema },
       { name: DatabaseModelNames.FOODSTUFF_REQUISITION, schema: FoodstuffRequisitionSchema },
+      { name: DatabaseModelNames.WALLET, schema: WalletSchema },
     ]),
   ],
   exports: [MongooseModule],
