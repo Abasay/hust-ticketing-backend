@@ -9,6 +9,7 @@ export enum UserRole {
   cashier = 'CASHIER',
   vendor = 'VENDOR',
   admin = 'ADMIN',
+  storeKeeper = 'STORE KEEPER',
 }
 
 @Schema({ timestamps: true })
@@ -43,6 +44,12 @@ export class User extends Document {
 
   @Prop({ unique: true, sparse: true })
   staffId?: string; // for staff
+
+  @Prop({ unique: false, sparse: true })
+  staffLevel?: string;
+
+  @Prop({ unique: false, sparse: true })
+  staffDepartment?: string;
 
   @Prop({ default: false })
   isAccountLocked: boolean;

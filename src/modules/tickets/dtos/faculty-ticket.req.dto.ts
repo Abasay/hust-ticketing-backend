@@ -2,16 +2,56 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsNumber, IsEnum, IsDateString, IsOptional, Min, IsArray } from 'class-validator';
 import { TicketType, PaymentType } from 'src/shared/constants';
 
+export class StaffDetail {
+  @ApiProperty({
+    description: 'Staff ID',
+    example: 'STAFF001',
+  })
+  @IsNotEmpty()
+  @IsString()
+  staffId: string;
+
+  @ApiProperty({
+    description: 'First Name of the staff',
+    example: 'John',
+  })
+  @IsNotEmpty()
+  @IsString()
+  firstName: string;
+
+  @ApiProperty({
+    description: 'Last Name of the staff',
+    example: 'Doe',
+  })
+  @IsNotEmpty()
+  @IsString()
+  lastName: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  email: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  department: string;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  staffLevel: string;
+}
+
 export class FacultyTicketReqDto {
   @ApiProperty({
     description: 'Array of staff IDs',
     example: ['STAFF001', 'STAFF002', 'STAFF003'],
-    type: [String],
+    type: [StaffDetail],
   })
   @IsNotEmpty()
   @IsArray()
-  @IsString({ each: true })
-  staffIds: string[];
+  staffIds: StaffDetail[];
 
   @ApiProperty({
     description: 'Type of ticket being generated',

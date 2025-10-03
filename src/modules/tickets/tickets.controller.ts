@@ -232,6 +232,20 @@ export class TicketsController {
   @Roles(UserRole.CASHIER, UserRole.ADMIN, UserRole.VENDOR)
   @ApiOperation({ summary: 'Get staff tickets for printing' })
   async getStaffTickets(@Param('staffId') staffId: string) {
-    return this.ticketsService.getStaffTickets({ staffId });
+    return this.ticketsService.getStaffTickets({ staffId: decodeURIComponent(staffId) });
+  }
+
+  @Get('external/departments')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN, UserRole.VENDOR)
+  @ApiOperation({ summary: 'Get external departments' })
+  async getDepartments(@Query('searchTerm') searchTerm: string) {
+    return this.ticketsService.getDepartments(searchTerm);
+  }
+
+  @Get('external/departments/staffs')
+  @Roles(UserRole.CASHIER, UserRole.ADMIN, UserRole.VENDOR)
+  @ApiOperation({ summary: 'Get external department staffs' })
+  async getDepartmentStaffs(@Query('department') department: string, @Query('searchTerm') searchTerm: string) {
+    return this.ticketsService.getDepartmentStaffs(department, searchTerm);
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, Inject, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { BaseRepository } from '../repository/base.repository';
 import { Repositories } from 'src/shared/enums/db.enum';
 import { DatabaseModelNames, TicketStatus, UserRole, PaymentType, TransactionStatus, RedemptionStatus } from 'src/shared/constants';
@@ -36,9 +36,12 @@ import { Transaction } from '../transactions/transaction.schema';
 import { Redemption } from '../redemptions/redemption.schema';
 import { Wallet } from '../wallet/wallet.schema';
 import { Types } from 'mongoose';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class TicketsService {
+  private readonly logger = new Logger(TicketsService.name);
   constructor(
     @Inject(Repositories.TicketRepository)
     private readonly ticketRepository: BaseRepository<Ticket>,
@@ -50,14 +53,24 @@ export class TicketsService {
     private readonly redemptionRepository: BaseRepository<Redemption>,
     @Inject(Repositories.WalletRepository)
     private readonly walletRepository: BaseRepository<Wallet>,
+    private readonly httpService: HttpService,
   ) {}
 
   private generateTicketNumber(): string {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, '0');
-    return `TKT-${new Date().getFullYear()}-${random}${timestamp.toString().slice(-6)}`;
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const length = 5;
+
+    // Convert string to array to allow splicing (for no repetition)
+    const charsArray = chars.split('');
+    let ticket = '';
+
+    for (let i = 0; i < length; i++) {
+      const randIndex = Math.floor(Math.random() * charsArray.length);
+      ticket += charsArray[randIndex];
+      charsArray.splice(randIndex, 1); // remove picked char to avoid repetition
+    }
+
+    return `TKT-${ticket}`;
   }
 
   async generateTicket(generateTicketDto: GenerateTicketReqDto, cashierId: string): Promise<GenerateTicketResDto> {
@@ -990,23 +1003,25 @@ export class TicketsService {
 
     for (const staffId of staffIds) {
       // Find or create staff
-      let staff = await this.userRepository.findOne({ staffId });
+      let staff = await this.userRepository.findOne({ staffId: staffId.staffId });
 
       if (!staff) {
         staff = await this.userRepository.create({
-          firstName: 'Staff',
-          lastName: staffId,
-          email: `${staffId}@temp.edu`,
+          firstName: staffId.firstName,
+          lastName: staffId.lastName,
+          email: staffId.email,
           password: null,
           role: UserRole.STAFF,
-          staffId: staffId,
+          staffId: staffId.staffId,
           isAccountLocked: true,
+          staffDepartment: staffId.department,
+          staffLevel: staffId.staffLevel,
         });
       }
 
       // Generate ticket for this staff
       const generateTicketDto: GenerateTicketReqDto = {
-        userId: (staff._id as any).toString(),
+        userId: staff._id as any,
         ticketType,
         amount: amountPerTicket,
         paymentType,
@@ -1044,7 +1059,16 @@ export class TicketsService {
       throw new NotFoundException('Staff not found');
     }
 
-    const tickets = await this.ticketRepository.findAll({ customer: staff._id });
+    const tickets = await this.ticketRepository.findAllAndPopulate({ customer: new Types.ObjectId(staff._id as any) }, [
+      {
+        path: 'customer',
+        select: 'firstName lastName email role',
+      },
+      {
+        path: 'cashierId',
+        select: 'firstName lastName email role',
+      },
+    ]);
 
     if (!tickets) {
       throw new NotFoundException('No tickets found for this staff');
@@ -1059,6 +1083,9 @@ export class TicketsService {
         status: ticket.status,
         expiryDate: ticket.expiryDate,
         createdAt: (ticket as any).createdAt,
+        customer: ticket.customer,
+        cashier: ticket.cashierId,
+        paymentMethod: ticket.paymentType,
       })),
     };
   }
@@ -1083,5 +1110,45 @@ export class TicketsService {
         availableBalance: (wallet?.walletBalance || 0) - (wallet?.walletUsed || 0),
       },
     };
+  }
+
+  async getDepartments(searchTerm: string): Promise<any> {
+    try {
+      const url = searchTerm
+        ? `https://api-lvdtevnqpq-uc.a.run.app/external/departments?searchTerm=${encodeURIComponent(searchTerm)}`
+        : 'https://api-lvdtevnqpq-uc.a.run.app/external/departments';
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            'x-api-key': '3fcfd77d35604cfa4a5ef9bfcb313920',
+            'Content-Type': 'application/json',
+          },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.warn(`Failed to get departments for searchTerm ${searchTerm}:`, error.message);
+      return false;
+    }
+  }
+
+  async getDepartmentStaffs(department: string, searchTerm: string): Promise<any> {
+    try {
+      const url = searchTerm
+        ? `https://api-lvdtevnqpq-uc.a.run.app/external/departments/staffs?department=${department}&searchTerm=${encodeURIComponent(searchTerm)}`
+        : `https://api-lvdtevnqpq-uc.a.run.app/external/departments/staffs?department=${department}`;
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            'x-api-key': '3fcfd77d35604cfa4a5ef9bfcb313920',
+            'Content-Type': 'application/json',
+          },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.warn(`Failed to get department staffs for department ${department} and searchTerm ${searchTerm}:`, error.message);
+      return false;
+    }
   }
 }
