@@ -18,7 +18,7 @@ import {
 @Controller('cooked-food-names')
 @UseGuards(JwtUserAuthGuard, RolesGuard)
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.STORE_MANAGER)
 export class CookedFoodNamesController {
   constructor(private readonly cookedFoodNamesService: CookedFoodNamesService) {}
 

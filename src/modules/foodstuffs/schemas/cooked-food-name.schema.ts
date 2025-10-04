@@ -11,6 +11,9 @@ export class CookedFoodName extends Document {
   @Prop({ trim: true })
   description?: string;
 
+  @Prop({ required: true, type: Number })
+  pricePerQuantity: number;
+
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
 }

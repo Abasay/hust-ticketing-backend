@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, MinLength, MaxLength, IsNumber, Min } from 'class-validator';
 
 export class CreateCookedFoodNameReqDto {
   @ApiProperty({ example: 'Jollof Rice', description: 'Name of the cooked food' })
@@ -13,6 +13,11 @@ export class CreateCookedFoodNameReqDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @ApiProperty({ example: 'Price Per Quantity', required: false })
+  @IsNumber()
+  @Min(1)
+  pricePerQuantity: number;
 }
 
 export class UpdateCookedFoodNameReqDto {

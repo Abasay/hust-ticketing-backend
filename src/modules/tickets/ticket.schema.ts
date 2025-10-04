@@ -38,6 +38,9 @@ export class Ticket extends Document {
 
   @Prop()
   expiryDate: Date; // ticket expiry date
+
+  @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.ORDER })
+  order?: Types.ObjectId; //Order Id
 }
 
 export const TicketSchema = SchemaFactory.createForClass(Ticket);

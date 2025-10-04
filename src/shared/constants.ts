@@ -11,6 +11,7 @@ export enum DatabaseModelNames {
   COOKED_FOOD = 'CookedFood',
   FOODSTUFF_REQUISITION = 'FoodstuffRequisition',
   WALLET = 'Wallet',
+  ORDER = 'Order',
 }
 
 export enum UserRole {
@@ -19,6 +20,7 @@ export enum UserRole {
   VENDOR = 'VENDOR',
   STUDENT = 'STUDENT',
   STAFF = 'STAFF',
+  STORE_MANAGER = 'STORE_MANAGER',
 }
 
 export enum AccountStatus {
@@ -51,6 +53,13 @@ export enum TransactionStatus {
   SUCCESS = 'SUCCESS',
   FAILED = 'FAILED',
   PENDING = 'PENDING',
+}
+
+export enum OrderStatus {
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  PENDING = 'PENDING',
+  FULFILLED = 'FULFILLED',
 }
 
 export enum RedemptionStatus {

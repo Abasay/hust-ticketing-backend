@@ -14,3 +14,5 @@ export * from './get-authorized-users.req.dto';
 export * from './get-authorized-users.res.dto';
 export * from './dashboard-stats.res.dto';
 export * from './user.dto';
+export * from './update-user-role.req.dto';
+export * from './update-user-status.req.dto';

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { AccountStatus } from 'src/shared/constants';
 
 export type UserDocument = User & Document;
 
@@ -9,7 +10,7 @@ export enum UserRole {
   cashier = 'CASHIER',
   vendor = 'VENDOR',
   admin = 'ADMIN',
-  storeKeeper = 'STORE KEEPER',
+  storeManager = 'STORE_MANAGER',
 }
 
 @Schema({ timestamps: true })
@@ -28,6 +29,9 @@ export class User extends Document {
 
   @Prop({ enum: Object.values(UserRole), default: UserRole.student })
   role: string;
+
+  @Prop({ enum: Object.values(AccountStatus), default: AccountStatus.ACTIVE })
+  accountStatus: string;
 
   // for "authorized users" pre-added by admin
   @Prop({ default: false })

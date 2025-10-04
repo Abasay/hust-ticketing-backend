@@ -25,6 +25,8 @@ import {
   GetAuthorizedUsersReqDto,
   GetAuthorizedUsersResDto,
   DashboardResDto,
+  UpdateUserRoleReqDto,
+  UpdateUserStatusReqDto,
 } from './dtos';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
@@ -273,5 +275,55 @@ export class AuthController {
   @Get('dashboard')
   async getDashboardStats(): Promise<DashboardResDto> {
     return this.authService.getDashboardStats();
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtUserAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Update user role (Admin only)',
+    description: 'Update the role of a user. Only accessible by admin users.',
+  })
+  @ApiOkResponse({
+    description: 'User role updated successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request body or user not found',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing token',
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Admin access required',
+  })
+  @HttpCode(200)
+  @Post('update-user-role')
+  async updateUserRole(@Body(ValidationPipe) updateUserRoleDto: UpdateUserRoleReqDto) {
+    return this.authService.updateUserRole(updateUserRoleDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtUserAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Update user status (Admin only)',
+    description: 'Update the status of a user. Only accessible by admin users.',
+  })
+  @ApiOkResponse({
+    description: 'User status updated successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request body or user not found',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized - Invalid or missing token',
+  })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Admin access required',
+  })
+  @HttpCode(200)
+  @Post('update-user-status')
+  async updateUserStatus(@Body(ValidationPipe) updateUserStatusDto: UpdateUserStatusReqDto) {
+    return this.authService.updateUserStatus(updateUserStatusDto);
   }
 }

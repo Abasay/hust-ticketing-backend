@@ -18,6 +18,8 @@ import {
   GetAuthorizedUsersReqDto,
   GetAuthorizedUsersResDto,
   DashboardResDto,
+  UpdateUserRoleReqDto,
+  UpdateUserStatusReqDto,
 } from './dtos';
 
 import { MailerService } from '../mailer/mailer.service';
@@ -643,6 +645,48 @@ export class AuthService {
       message: 'Dashboard statistics retrieved successfully',
       stats,
       dailyTransactions,
+    };
+  }
+
+  async updateUserRole(updateUserRoleDto: UpdateUserRoleReqDto): Promise<any> {
+    const { userId, newRole } = updateUserRoleDto;
+
+    // Find the user by ID
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw BadRequestException.RESOURCE_NOT_FOUND('User not found');
+    }
+
+    // Update the user's role
+    await this.userRepository.update({ _id: userId }, { role: newRole });
+
+    // Find the authorized user by email and update their account type
+    const authorizedUser = await this.authorizedUserRepository.findOne({ email: user.email });
+    if (authorizedUser) {
+      await this.authorizedUserRepository.update({ email: user.email }, { accountType: newRole });
+    }
+
+    return {
+      success: true,
+      message: 'User role updated successfully',
+    };
+  }
+
+  async updateUserStatus(updateUserStatusDto: UpdateUserStatusReqDto): Promise<any> {
+    const { userId, accountStatus } = updateUserStatusDto;
+
+    // Find the user by ID
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw BadRequestException.RESOURCE_NOT_FOUND('User not found');
+    }
+
+    // Update the user's status
+    await this.userRepository.update({ _id: userId }, { accountStatus });
+
+    return {
+      success: true,
+      message: 'User status updated successfully',
     };
   }
 }

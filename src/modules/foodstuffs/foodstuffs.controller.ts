@@ -27,7 +27,7 @@ import {
 @Controller('foodstuffs')
 @UseGuards(JwtUserAuthGuard, RolesGuard)
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.STORE_MANAGER)
 export class FoodstuffsController {
   constructor(private readonly foodstuffsService: FoodstuffsService) {}
 
