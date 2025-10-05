@@ -50,7 +50,8 @@ dotenv.config();
         if (!uri) {
           throw new Error('MongoDB connection URI is undefined');
         }
-        return { uri };
+        const dbName = process.env.NODE_ENV === 'production' ? 'production' : 'test';
+        return { uri, dbName: dbName };
       },
       inject: [ConfigService],
     }),

@@ -11,4 +11,5 @@ export const Repositories = {
   CookedFoodRepository: 'CookedFoodRepository',
   FoodstuffRequisitionRepository: 'FoodstuffRequisitionRepository',
   WalletRepository: 'WalletRepository',
+  OrderRepository: 'OrderRepository',
 };

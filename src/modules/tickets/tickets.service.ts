@@ -1,7 +1,15 @@
 import { Injectable, Inject, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { BaseRepository } from '../repository/base.repository';
 import { Repositories } from 'src/shared/enums/db.enum';
-import { DatabaseModelNames, TicketStatus, UserRole, PaymentType, TransactionStatus, RedemptionStatus } from 'src/shared/constants';
+import {
+  DatabaseModelNames,
+  TicketStatus,
+  UserRole,
+  PaymentType,
+  TransactionStatus,
+  RedemptionStatus,
+  OrderStatus,
+} from 'src/shared/constants';
 import {
   GenerateTicketReqDto,
   GenerateTicketResDto,
@@ -38,6 +46,7 @@ import { Wallet } from '../wallet/wallet.schema';
 import { Types } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { Order } from '../foodstuffs/schemas/order.schema';
 
 @Injectable()
 export class TicketsService {
@@ -54,6 +63,8 @@ export class TicketsService {
     @Inject(Repositories.WalletRepository)
     private readonly walletRepository: BaseRepository<Wallet>,
     private readonly httpService: HttpService,
+    @Inject(Repositories.OrderRepository)
+    private readonly orderRepository: BaseRepository<Order>,
   ) {}
 
   private generateTicketNumber(): string {
@@ -63,6 +74,7 @@ export class TicketsService {
     // Convert string to array to allow splicing (for no repetition)
     const charsArray = chars.split('');
     let ticket = '';
+    // const existingTickets = this.ticketRepository.findAll({});
 
     for (let i = 0; i < length; i++) {
       const randIndex = Math.floor(Math.random() * charsArray.length);
@@ -125,6 +137,23 @@ export class TicketsService {
       throw new BadRequestException('Failed to generate unique ticket number. Please try again.');
     }
 
+    let order: Order | null = null;
+
+    if (generateTicketDto.order) {
+      order = await this.orderRepository.findById(generateTicketDto.order);
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+
+      if (order.status !== OrderStatus.PENDING) {
+        throw new BadRequestException('Order already fulfilled');
+      }
+
+      generateTicketDto.amount = order.orders.reduce((total, item) => total + item.pricePerQuantity * item.quantity, 0);
+    }
+
+    console.log(order);
+
     // Create ticket
     const ticketData = {
       ticketNo,
@@ -139,6 +168,10 @@ export class TicketsService {
     };
 
     const ticket = await this.ticketRepository.create(ticketData as any);
+
+    if (generateTicketDto.order) {
+      await this.orderRepository.findOneAndUpdate({ _id: generateTicketDto.order }, { status: OrderStatus.FULFILLED });
+    }
 
     // Populate ticket with user details for response
     const populateOptions = [{ path: 'cashierId', select: 'firstName lastName email role' }];

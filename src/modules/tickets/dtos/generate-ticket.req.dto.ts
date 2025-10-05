@@ -56,4 +56,13 @@ export class GenerateTicketReqDto {
   @IsOptional()
   @IsString()
   transactionReference?: string;
+
+  @ApiProperty({
+    description: 'Order ID',
+    example: '507f1f77bcf86cd799439011',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  order?: string;
 }

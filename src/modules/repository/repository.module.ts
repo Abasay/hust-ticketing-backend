@@ -70,6 +70,11 @@ import { DatabaseModelNames } from 'src/shared/constants';
       useFactory: (walletModel) => new BaseRepository(walletModel),
       inject: [getModelToken(DatabaseModelNames.WALLET)],
     },
+    {
+      provide: Repositories.OrderRepository,
+      useFactory: (orderModel) => new BaseRepository(orderModel),
+      inject: [getModelToken(DatabaseModelNames.ORDER)],
+    },
   ],
   exports: [...Object.values(Repositories)],
 })

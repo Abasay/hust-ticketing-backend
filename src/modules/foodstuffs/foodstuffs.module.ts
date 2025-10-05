@@ -13,19 +13,33 @@ import { CookedFoodNamesController } from './cooked-food-names.controller';
 import { CookedFoodsController } from './cooked-foods.controller';
 import { RequisitionsService } from './requisitions.service';
 import { RequisitionsController } from './requisitions.controller';
+import { OrdersController } from './orders.controller';
+import { OrdersService } from './orders.service';
 
 @Module({
   imports: [MongooseModelsModule, RepositoryModule],
-  controllers: [FoodstuffsController, CookedFoodNamesController, CookedFoodsController, RequisitionsController],
+  controllers: [
+    FoodstuffsController,
+    CookedFoodNamesController,
+    CookedFoodsController,
+    RequisitionsController,
+    OrdersController,
+  ],
   providers: [
     FoodstuffsService,
     CookedFoodNamesService,
     CookedFoodsService,
     RequisitionsService,
+    OrdersService,
     {
       provide: Repositories.FoodstuffRequisitionRepository,
       useFactory: (model) => new BaseRepository(model),
       inject: [getModelToken(DatabaseModelNames.FOODSTUFF_REQUISITION)],
+    },
+    {
+      provide: Repositories.OrderRepository,
+      useFactory: (model) => new BaseRepository(model),
+      inject: [getModelToken(DatabaseModelNames.ORDER)],
     },
   ],
 })

@@ -4,9 +4,9 @@ import { DatabaseModelNames, OrderStatus } from 'src/shared/constants';
 
 export type OrderDocument = Order & Document;
 
-@Schema({ timestamps: true })
-export class OrderItem extends Document {
-  @Prop({ required: true, ref: DatabaseModelNames.COOKED_FOOD_NAME })
+@Schema({ _id: false }) // 👈 important: embedded schema doesn't need its own _id
+export class OrderItem {
+  @Prop({ required: true, ref: DatabaseModelNames.COOKED_FOOD_NAME, type: Types.ObjectId })
   itemId: Types.ObjectId;
 
   @Prop({ required: true, type: Number })
@@ -16,13 +16,15 @@ export class OrderItem extends Document {
   pricePerQuantity: number;
 }
 
+export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
+
 @Schema({ timestamps: true })
-export class Order extends Document {
-  @Prop({ required: false, ref: DatabaseModelNames.USER })
+export class Order {
+  @Prop({ required: false, ref: DatabaseModelNames.USER, type: Types.ObjectId })
   user?: Types.ObjectId;
 
-  @Prop({ required: true, type: Array })
-  orders: [OrderItem];
+  @Prop({ type: [OrderItemSchema], required: true })
+  orders: OrderItem[];
 
   @Prop({ trim: true })
   description?: string;

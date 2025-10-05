@@ -1,5 +1,7 @@
 export * from './create-foodstuff.dto';
 export * from './update-foodstuff.dto';
+export * from './create-order.dto';
+export * from './order.dto';
 export * from './get-foodstuff.dto';
 export * from './delete-foodstuff.dto';
 export * from './add-activity.dto';

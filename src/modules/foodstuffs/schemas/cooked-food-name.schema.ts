@@ -16,6 +16,12 @@ export class CookedFoodName extends Document {
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
+
+  @Prop({ type: String, required: true })
+  category: string;
+
+  @Prop({ type: String, required: true })
+  purchaseUnit: string;
 }
 
 export const CookedFoodNameSchema = SchemaFactory.createForClass(CookedFoodName);

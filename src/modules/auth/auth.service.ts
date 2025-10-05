@@ -652,18 +652,18 @@ export class AuthService {
     const { userId, newRole } = updateUserRoleDto;
 
     // Find the user by ID
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
+    const authorizedUser = await this.authorizedUserRepository.findById(userId);
+    if (!authorizedUser) {
       throw BadRequestException.RESOURCE_NOT_FOUND('User not found');
     }
 
     // Update the user's role
-    await this.userRepository.update({ _id: userId }, { role: newRole });
+    await this.authorizedUserRepository.update({ _id: userId }, { accountType: newRole });
 
     // Find the authorized user by email and update their account type
-    const authorizedUser = await this.authorizedUserRepository.findOne({ email: user.email });
-    if (authorizedUser) {
-      await this.authorizedUserRepository.update({ email: user.email }, { accountType: newRole });
+    const user = await this.userRepository.findOne({ email: authorizedUser.email });
+    if (user) {
+      await this.userRepository.update({ email: user.email }, { role: newRole });
     }
 
     return {
@@ -676,13 +676,21 @@ export class AuthService {
     const { userId, accountStatus } = updateUserStatusDto;
 
     // Find the user by ID
-    const user = await this.userRepository.findById(userId);
+    const authorizedUser = await this.authorizedUserRepository.findById(userId);
+    if (!authorizedUser) {
+      throw BadRequestException.RESOURCE_NOT_FOUND('Authorized User not found');
+    }
+
+    // Find the user by ID
+    const user = await this.userRepository.findOne({
+      email: authorizedUser.email,
+    });
     if (!user) {
       throw BadRequestException.RESOURCE_NOT_FOUND('User not found');
     }
 
     // Update the user's status
-    await this.userRepository.update({ _id: userId }, { accountStatus });
+    await this.userRepository.update({ _id: user._id }, { accountStatus });
 
     return {
       success: true,

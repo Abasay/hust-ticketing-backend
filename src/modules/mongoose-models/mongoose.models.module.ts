@@ -14,6 +14,7 @@ import { CookedFoodNameSchema } from '../foodstuffs/schemas/cooked-food-name.sch
 import { CookedFoodSchema } from '../foodstuffs/schemas/cooked-food.schema';
 import { FoodstuffRequisitionSchema } from '../foodstuffs/schemas/foodstuff-requisition.schema';
 import { WalletSchema } from '../wallet/wallet.schema';
+import { OrderSchema } from '../foodstuffs/schemas/order.schema';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WalletSchema } from '../wallet/wallet.schema';
       { name: DatabaseModelNames.COOKED_FOOD, schema: CookedFoodSchema },
       { name: DatabaseModelNames.FOODSTUFF_REQUISITION, schema: FoodstuffRequisitionSchema },
       { name: DatabaseModelNames.WALLET, schema: WalletSchema },
+      { name: DatabaseModelNames.ORDER, schema: OrderSchema },
     ]),
   ],
   exports: [MongooseModule],
