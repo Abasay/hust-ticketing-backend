@@ -73,6 +73,7 @@ export class OrdersService {
       orderId,
       user: user ? (user._id as Types.ObjectId) : undefined,
       orders: items,
+      processingFee: createOrderDto.processingFee,
     });
 
     return createdOrder;
@@ -103,6 +104,7 @@ export class OrdersService {
       }),
       createdAt: (order as any).createdAt,
       updatedAt: (order as any).updatedAt,
+      processingFee: order.processingFee,
     } as any;
   }
 

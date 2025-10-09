@@ -14,6 +14,12 @@ export class CreateCookedFoodNameReqDto {
   @MaxLength(500)
   description?: string;
 
+  @ApiProperty({ example: 'Traditional Nigerian rice dish', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  category: string;
+
   @ApiProperty({ example: 'Price Per Quantity', required: false })
   @IsNumber()
   @Min(1)

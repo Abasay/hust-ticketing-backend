@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import { IsArray, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Min, MinLength, ValidateNested } from 'class-validator';
 import { Types } from 'mongoose';
 
 class OrderItemDto {
@@ -57,4 +57,9 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({ example: 'Processing Fee', required: false })
+  @IsNumber()
+  @Min(10)
+  processingFee: number;
 }

@@ -34,6 +34,9 @@ export class Order {
 
   @Prop({ trim: true, required: true, unique: true })
   orderId: string;
+
+  @Prop({ type: Number, default: 10, required: true })
+  processingFee: number;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

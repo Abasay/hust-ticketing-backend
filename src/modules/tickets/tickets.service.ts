@@ -149,7 +149,8 @@ export class TicketsService {
         throw new BadRequestException('Order already fulfilled');
       }
 
-      generateTicketDto.amount = order.orders.reduce((total, item) => total + item.pricePerQuantity * item.quantity, 0);
+      generateTicketDto.amount =
+        order.orders.reduce((total, item) => total + item.pricePerQuantity * item.quantity, 0) + order.processingFee || 0;
     }
 
     console.log(order);
