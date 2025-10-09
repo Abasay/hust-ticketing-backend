@@ -60,6 +60,5 @@ export class CreateOrderDto {
 
   @ApiProperty({ example: 'Processing Fee', required: false })
   @IsNumber()
-  @Min(10)
   processingFee: number;
 }
