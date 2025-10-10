@@ -68,7 +68,7 @@ export class TicketsService {
   ) {}
 
   private generateTicketNumber(): string {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     const length = 5;
 
     // Convert string to array to allow splicing (for no repetition)
@@ -522,7 +522,7 @@ export class TicketsService {
   }
 
   async getAdminTicketLogs(filterDto: TicketFilterDto): Promise<TicketListResDto> {
-    const { page = 1, limit = 10, status, ticketType, search } = filterDto;
+    const { page = 1, limit = 10, status, ticketType, search, cashierId } = filterDto;
     const skip = (page - 1) * limit;
 
     // Build filter query
@@ -540,6 +540,10 @@ export class TicketsService {
       filter.ticketNo = { $regex: search, $options: 'i' };
     }
 
+    if (cashierId) {
+      filter.cashierId = new Types.ObjectId(cashierId);
+    }
+
     // Get all tickets with pagination and populate user details
     const tickets = await this.ticketRepository.findAllAndPopulate(
       filter,
@@ -552,6 +556,7 @@ export class TicketsService {
       skip,
       limit,
     );
+    console.log(tickets);
 
     // Get total count
     const total = await this.ticketRepository.count(filter);
@@ -608,7 +613,7 @@ export class TicketsService {
   }
 
   async getAdminTicketLogsExport(filterDto: TicketFilterDto): Promise<TicketListResDto> {
-    const { page = 1, limit = 10, status, ticketType, search } = filterDto;
+    const { page = 1, limit = 10, status, ticketType, search, cashierId } = filterDto;
     const skip = (page - 1) * limit;
 
     // Build filter query
@@ -624,6 +629,10 @@ export class TicketsService {
 
     if (search) {
       filter.ticketNo = { $regex: search, $options: 'i' };
+    }
+
+    if (cashierId) {
+      filter.cashierId = cashierId;
     }
 
     // Get all tickets with pagination and populate user details

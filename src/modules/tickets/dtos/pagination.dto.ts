@@ -52,14 +52,23 @@ export class TicketFilterDto extends PaginationDto {
   @IsEnum(TicketType)
   ticketType?: string;
 
-  @ApiProperty({ 
-    description: 'Search by ticket number', 
+  @ApiProperty({
+    description: 'Search by ticket number',
     example: 'TKT-2024',
     required: false
   })
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({
+    description: 'Filter by cashier ID',
+    example: '507f1f77bcf86cd799439011',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  cashierId?: string;
 }
 
 export class PaginatedResponseDto<T> {

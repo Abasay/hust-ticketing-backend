@@ -25,7 +25,7 @@ export class GetAuthorizedUsersReqDto {
   @Transform(({ value }) => parseInt(value))
   @IsNumber()
   @Min(1)
-  @Max(100)
+  @Max(1000)
   limit?: number = 10;
 
   @ApiProperty({
