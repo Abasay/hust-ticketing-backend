@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsDateString, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsEnum, IsOptional, IsDateString, IsString, IsInt, Min } from 'class-validator';
 
 export enum ReportType {
   PURCHASES = 'purchases',
@@ -56,4 +57,102 @@ export class ReportResDto {
     };
     generatedAt: string;
   };
+}
+
+export class ReportDateRangeDto {
+  @ApiProperty({
+    description: 'Start date of the report',
+    required: false,
+    type: Date,
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  startDate?: Date;
+
+  @ApiProperty({
+    description: 'End date of the report',
+    required: false,
+    type: Date,
+  })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  endDate?: Date;
+
+  @ApiProperty({
+    description: 'Page number for pagination',
+    required: false,
+    type: Number,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiProperty({
+    description: 'Number of items per page',
+    required: false,
+    type: Number,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 10;
+}
+
+class OrderReportItemDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  quantityCooked: number;
+
+  @ApiProperty()
+  measurementUnit: string;
+
+  @ApiProperty()
+  quantitySold: number;
+
+  @ApiProperty()
+  purchaseUnit: string;
+
+  @ApiProperty()
+  pricePerQuantityForSold: number;
+
+  @ApiProperty()
+  amountRevenue: number;
+}
+
+class DailyReportDto {
+  @ApiProperty()
+  date: string;
+
+  @ApiProperty({ type: [OrderReportItemDto] })
+  orders: OrderReportItemDto[];
+
+  @ApiProperty()
+  ticketGenerated: number;
+
+  @ApiProperty()
+  ticketValueGenerated: number;
+
+  @ApiProperty()
+  ticketRedeemed: number;
+
+  @ApiProperty()
+  ticketValueRedeemed: number;
+}
+
+export class OrdersReportResDto {
+  @ApiProperty({ type: [DailyReportDto] })
+  data: DailyReportDto[];
+
+  @ApiProperty()
+  totalRecords: number;
+
+  @ApiProperty()
+  totalPages: number;
 }

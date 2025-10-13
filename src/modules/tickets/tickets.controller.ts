@@ -39,9 +39,9 @@ export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
   @Post('generate')
-  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @Roles(UserRole.CASHIER, UserRole.ADMIN, UserRole.VENDOR)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Generate a new ticket (Cashier/Admin only)' })
+  @ApiOperation({ summary: 'Generate a new ticket (Cashier/Admin/Vendor only)' })
   @ApiResponse({ status: 201, description: 'Ticket generated successfully', type: GenerateTicketResDto })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -52,9 +52,9 @@ export class TicketsController {
   }
 
   @Post('redeem')
-  @Roles(UserRole.VENDOR, UserRole.ADMIN)
+  @Roles(UserRole.VENDOR, UserRole.ADMIN, UserRole.CASHIER)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Redeem a ticket (Vendor/Admin only)' })
+  @ApiOperation({ summary: 'Redeem a ticket (Vendor/Admin/Cashier only)' })
   @ApiResponse({ status: 200, description: 'Ticket redeemed successfully', type: RedeemTicketResDto })
   @ApiResponse({ status: 400, description: 'Bad request - ticket already redeemed or expired' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })

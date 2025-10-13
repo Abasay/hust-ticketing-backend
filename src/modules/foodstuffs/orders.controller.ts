@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, Param, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, ValidationPipe } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderDto } from './dtos/order.dto';
+import { ReportDateRangeDto } from './dtos/reports.dto';
 
 @ApiTags('Foodstuffs/Orders')
 @Controller('foodstuffs/orders')
@@ -34,5 +35,14 @@ export class OrdersController {
   @Get('order/:orderId')
   async getOrderByOrderId(@Param('orderId') orderId: string) {
     return this.ordersService.getOrderByOrderId(orderId);
+  }
+
+  @ApiOperation({ summary: 'Get orders report' })
+  @ApiOkResponse({ description: 'Report generated successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid query parameters' })
+  @HttpCode(200)
+  @Get('report')
+  async getOrdersReport(@Query(ValidationPipe) dateRange: ReportDateRangeDto) {
+    return this.ordersService.getOrdersReport(dateRange);
   }
 }

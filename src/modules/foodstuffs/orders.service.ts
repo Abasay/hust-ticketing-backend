@@ -7,6 +7,11 @@ import { BadRequestException } from 'src/exceptions';
 import { Types } from 'mongoose';
 import { CookedFoodName } from './schemas/cooked-food-name.schema';
 import { User } from '../user/user.schema';
+import { ReportDateRangeDto } from './dtos/reports.dto';
+import { Ticket } from '../tickets/ticket.schema';
+import { Redemption } from '../redemptions/redemption.schema';
+import moment from 'moment-timezone';
+import { CookedFood } from './schemas/cooked-food.schema';
 
 @Injectable()
 export class OrdersService {
@@ -14,6 +19,9 @@ export class OrdersService {
     @Inject(Repositories.OrderRepository) private readonly orderRepository: BaseRepository<Order>,
     @Inject(Repositories.CookedFoodNameRepository) private readonly cookedFoodNameRepository: BaseRepository<CookedFoodName>,
     @Inject(Repositories.UserRepository) private readonly userRepository: BaseRepository<User>,
+    @Inject(Repositories.TicketRepository) private readonly ticketRepository: BaseRepository<Ticket>,
+    @Inject(Repositories.RedemptionRepository) private readonly redemptionRepository: BaseRepository<Redemption>,
+    @Inject(Repositories.CookedFoodRepository) private readonly cookedFoodRepository: BaseRepository<CookedFood>,
   ) {}
 
   private async generateOrderId(): Promise<string> {
@@ -115,6 +123,140 @@ export class OrdersService {
         ...item.toObject(),
         price: item.pricePerQuantity || 0,
       };
+    });
+  }
+
+  async getOrdersReport(dateRange: ReportDateRangeDto) {
+    const { startDate, endDate, page = 1, limit = 10 } = dateRange;
+
+    const start = moment(startDate).startOf('day').toDate();
+    const end = moment(endDate).endOf('day').toDate();
+
+    const dateQuery = {
+      $gte: start,
+      $lte: end,
+    };
+
+    const orders = await this.orderRepository.findAllAndPopulate({ createdAt: dateQuery }, [
+      {
+        path: 'orders.itemId',
+        select: 'name purchaseUnit measurementUnit',
+      },
+    ]);
+
+    const cookedFoodNameIds = orders.flatMap((order) => order.orders.map((item) => (item.itemId as any)._id));
+
+    const cookedFoods = await this.cookedFoodRepository.findAll({
+      cookedFoodNameId: { $in: cookedFoodNameIds },
+      preparationDate: dateQuery,
+    });
+
+    const cookedFoodMap = cookedFoods.reduce((acc, cookedFood) => {
+      const date = moment(cookedFood.preparationDate).tz('Africa/Lagos').format('YYYY-MM-DD');
+      const key = `${(cookedFood.cookedFoodNameId as any).toString()}-${date}`;
+      if (!acc[key]) {
+        acc[key] = 0;
+      }
+      acc[key] += cookedFood.preparedQuantityKg;
+      return acc;
+    }, {});
+
+    const tickets = await this.ticketRepository.findAll({ createdAt: dateQuery });
+    const redemptions = await this.redemptionRepository.findAllAndPopulate({ redeemedAt: dateQuery }, [
+      {
+        path: 'ticketId',
+        select: 'amount',
+      },
+    ]);
+
+    const report = {};
+
+    // Process orders
+    for (const order of orders) {
+      const date = moment((order as any).createdAt)
+        .tz('Africa/Lagos')
+        .format('YYYY-MM-DD');
+      if (!report[date]) {
+        this.initializeDateReport(report, date);
+      }
+
+      for (const orderItem of order.orders) {
+        const existingOrder = this.findExistingOrder(report, date, (orderItem.itemId as any).name);
+        const key = `${(orderItem.itemId as any)._id.toString()}-${date}`;
+        const quantityCooked = cookedFoodMap[key] || 0;
+
+        if (existingOrder) {
+          this.updateExistingOrder(existingOrder, orderItem, quantityCooked);
+        } else {
+          this.addNewOrder(report, date, orderItem, quantityCooked);
+        }
+      }
+    }
+
+    // Process tickets
+    for (const ticket of tickets) {
+      const date = moment((ticket as any).createdAt)
+        .tz('Africa/Lagos')
+        .format('YYYY-MM-DD');
+      if (!report[date]) {
+        this.initializeDateReport(report, date);
+      }
+      report[date].ticketGenerated += 1;
+      report[date].ticketValueGenerated += ticket.amount;
+    }
+
+    // Process redemptions
+    for (const redemption of redemptions) {
+      const date = moment(redemption.redeemedAt).tz('Africa/Lagos').format('YYYY-MM-DD');
+      if (!report[date]) {
+        this.initializeDateReport(report, date);
+      }
+      report[date].ticketRedeemed += 1;
+      report[date].ticketValueRedeemed += (redemption.ticketId as any).amount;
+    }
+
+    const reportValues = Object.values(report);
+    const totalRecords = reportValues.length;
+    const totalPages = Math.ceil(totalRecords / limit);
+    const paginatedData = reportValues.slice((page - 1) * limit, page * limit);
+
+    return {
+      data: paginatedData,
+      totalRecords,
+      totalPages,
+    };
+  }
+
+  private initializeDateReport(report, date) {
+    report[date] = {
+      date,
+      orders: [],
+      ticketGenerated: 0,
+      ticketValueGenerated: 0,
+      ticketRedeemed: 0,
+      ticketValueRedeemed: 0,
+    };
+  }
+
+  private findExistingOrder(report, date, name) {
+    return report[date].orders.find((o) => o.name === name);
+  }
+
+  private updateExistingOrder(existingOrder, orderItem, quantityCooked) {
+    existingOrder.quantitySold += orderItem.quantity;
+    existingOrder.amountRevenue += orderItem.quantity * orderItem.pricePerQuantity;
+    existingOrder.quantityCooked = quantityCooked;
+  }
+
+  private addNewOrder(report, date, orderItem, quantityCooked) {
+    report[date].orders.push({
+      name: (orderItem.itemId as any).name,
+      quantityCooked: quantityCooked,
+      measurementUnit: (orderItem.itemId as any).measurementUnit,
+      quantitySold: orderItem.quantity,
+      purchaseUnit: (orderItem.itemId as any).purchaseUnit,
+      pricePerQuantityForSold: orderItem.pricePerQuantity,
+      amountRevenue: orderItem.quantity * orderItem.pricePerQuantity,
     });
   }
 }
