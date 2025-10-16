@@ -101,9 +101,9 @@ export class TicketsService {
       throw new NotFoundException('Cashier not found');
     }
 
-    if (cashier.role !== UserRole.CASHIER && cashier.role !== UserRole.ADMIN) {
-      throw new BadRequestException('Only cashiers and admins can generate tickets');
-    }
+    // if (cashier.role !== UserRole.CASHIER && cashier.role !== UserRole.ADMIN) {
+    //   throw new BadRequestException('Only cashiers and admins can generate tickets');
+    // }
 
     // // Create transaction record
     // const transactionData = {
@@ -225,9 +225,9 @@ export class TicketsService {
       throw new NotFoundException('Redeemer not found');
     }
 
-    if (redeemer.role !== UserRole.VENDOR && redeemer.role !== UserRole.ADMIN) {
-      throw new BadRequestException('Only vendors and admins can redeem tickets');
-    }
+    // if (redeemer.role !== UserRole.VENDOR && redeemer.role !== UserRole.ADMIN) {
+    //   throw new BadRequestException('Only vendors and admins can redeem tickets');
+    // }
 
     // Find ticket with optional customer population
     const populateOptions = [];
