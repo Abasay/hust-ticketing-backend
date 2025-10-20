@@ -841,10 +841,28 @@ export class TicketsService {
 
   async getCashierIssuedStats(cashierId: string): Promise<CashierIssuedStatsResDto> {
     // Get all tickets issued by this cashier
+
+    //
     const issuedTickets = await this.ticketRepository.findAll({
       cashierId: cashierId,
       // status: TicketStatus.ISSUED,
+      createdAt: { $gte: this.startOfDay(new Date()), $lte: this.endOfDay(new Date()) },
     });
+
+    const redeemedTickets = await this.ticketRepository.findAll({
+      redeemedBy: cashierId,
+      status: TicketStatus.REDEEMED,
+      createdAt: { $gte: this.startOfDay(new Date()), $lte: this.endOfDay(new Date()) },
+    });
+
+    const ticketsRedeemed = redeemedTickets.length;
+    const totalRedeemedAmount = redeemedTickets.reduce((sum, ticket: any) => {
+      return sum + (Number(ticket.amount) || 0);
+    }, 0);
+
+    const averageRedeemedAmount = ticketsRedeemed > 0 ? totalRedeemedAmount / ticketsRedeemed : 0;
+
+    // Daily tickets
 
     const ticketsIssued = issuedTickets.length;
     const totalAmount = issuedTickets.reduce((sum, ticket: any) => {
@@ -859,9 +877,24 @@ export class TicketsService {
         ticketsIssued,
         totalAmount: Math.round(totalAmount),
         averageAmount: Math.round(averageAmount),
+        redeemedTickets: ticketsRedeemed,
+        totalRedeemedAmount: Math.round(totalRedeemedAmount),
+        averageRedeemedAmount: Math.round(averageRedeemedAmount),
       },
     };
   }
+
+  public endOfDay = (date: Date): Date => {
+    const newDate = new Date(date);
+    newDate.setHours(23, 59, 59, 999);
+    return newDate;
+  };
+
+  public startOfDay = (date: Date): Date => {
+    const newDate = new Date(date);
+    newDate.setHours(0, 0, 0, 0);
+    return newDate;
+  };
 
   async getVendorRedeemedStats(vendorId: string): Promise<VendorRedeemedStatsResDto> {
     // Get all tickets redeemed by this vendor

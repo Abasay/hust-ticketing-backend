@@ -9,6 +9,15 @@ export class CashierIssuedStatsDto {
 
   @ApiProperty({ description: 'Average ticket amount', example: 20000 })
   averageAmount: number;
+
+  @ApiProperty({ description: 'Number of tickets issued by cashier', example: 125 })
+  redeemedTickets: number;
+
+  @ApiProperty({ description: 'Total amount of all redeemed tickets', example: 2500000 })
+  totalRedeemedAmount: number;
+
+  @ApiProperty({ description: 'Average ticket amount', example: 20000 })
+  averageRedeemedAmount: number;
 }
 
 export class CashierIssuedStatsResDto {
