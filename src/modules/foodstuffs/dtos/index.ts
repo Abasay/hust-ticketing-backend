@@ -13,3 +13,4 @@ export * from './cooked-food-name.dto';
 export * from './cooked-food.dto';
 export * from './cooked-food-dashboard.dto';
 export * from './foodstuff.dto';
+export * from './bulk-purchase-by-name.dto';

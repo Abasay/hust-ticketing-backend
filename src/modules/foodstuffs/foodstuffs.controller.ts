@@ -21,6 +21,8 @@ import {
   StockAlertsResDto,
   GenerateReportReqDto,
   ReportResDto,
+  BulkPurchaseByNameReqDto,
+  BulkPurchaseByNameResDto,
 } from './dtos';
 
 @ApiTags('Foodstuffs')
@@ -115,5 +117,21 @@ export class FoodstuffsController {
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
   async getActivities(@Param('id') foodstuffId: string, @Query(ValidationPipe) query: GetActivitiesReqDto): Promise<GetActivitiesResDto> {
     return this.foodstuffsService.getActivities(foodstuffId, query);
+  }
+
+  // Bulk Purchase Operations
+  @Post('bulk-purchase-by-name')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create bulk purchase activities using foodstuff names',
+    description: 'This endpoint accepts an array of purchase items with foodstuff names and units. If a foodstuff does not exist, it will be created automatically. Names are matched case-insensitively to prevent duplicates.'
+  })
+  @ApiResponse({ status: 201, description: 'Bulk purchase completed successfully', type: BulkPurchaseByNameResDto })
+  @ApiResponse({ status: 400, description: 'Invalid request data' })
+  async bulkPurchaseByName(
+    @Body(ValidationPipe) bulkPurchaseDto: BulkPurchaseByNameReqDto,
+    @GetUser() user: any,
+  ): Promise<BulkPurchaseByNameResDto> {
+    return this.foodstuffsService.bulkPurchaseByName(bulkPurchaseDto, user._id);
   }
 }

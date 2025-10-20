@@ -12,10 +12,14 @@ import {
   GroupBy,
   GetFoodstuffReqDto,
   CreateFoodstuffResDto,
+  BulkPurchaseByNameReqDto,
+  BulkPurchaseByNameResDto,
+  PurchaseItemByNameDto,
 } from './dtos';
 import { CookedFoodName } from './schemas/cooked-food-name.schema';
 import { FoodstuffHistory } from './schemas/foodstuff-history.schema';
 import { Foodstuff } from './schemas/foodstuff.schema';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class FoodstuffsService {
@@ -135,12 +139,12 @@ export class FoodstuffsService {
     }
 
     // Check if there are any activities for this foodstuff
-    const activitiesCount = await this.foodstuffHistoryRepository.count({ foodstuffId: id });
+    const activitiesCount = await this.foodstuffHistoryRepository.count({ foodstuffId: new Types.ObjectId(id) });
     if (activitiesCount > 0) {
       throw new BadRequestException('Cannot delete foodstuff with existing activities');
     }
 
-    await this.foodstuffRepository.delete({ _id: id });
+    await this.foodstuffRepository.delete({ _id: new Types.ObjectId(id) });
 
     return {
       message: 'Foodstuff deleted successfully',
@@ -181,7 +185,7 @@ export class FoodstuffsService {
 
     // Create activity record
     const activityData: any = {
-      foodstuffId,
+      foodstuffId: new Types.ObjectId(foodstuffId),
       ...addActivityDto,
       doneBy: userId,
     };
@@ -229,7 +233,7 @@ export class FoodstuffsService {
     const { page = 1, limit = 10, actionType, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = { foodstuffId };
+    const filter: any = { foodstuffId: new Types.ObjectId(foodstuffId) };
 
     if (actionType) {
       filter.actionType = actionType;
@@ -493,5 +497,115 @@ export class FoodstuffsService {
       foodstuffName,
       ...(data as any),
     }));
+  }
+
+  /**
+   * Find or create a foodstuff by name (case-insensitive)
+   * Ensures no duplication regardless of uppercase or lowercase
+   */
+  private async findOrCreateFoodstuff(name: string, unit: string): Promise<{ foodstuff: Foodstuff; isNew: boolean }> {
+    // Search for existing foodstuff (case-insensitive)
+    const existingFoodstuff = await this.foodstuffRepository.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+    });
+
+    if (existingFoodstuff) {
+      return { foodstuff: existingFoodstuff, isNew: false };
+    }
+
+    // Create new foodstuff if it doesn't exist
+    const newFoodstuff = await this.foodstuffRepository.create({
+      name: name.trim(),
+      unit: unit.trim(),
+      currentQuantity: 0,
+      averageCostPrice: 0,
+    });
+
+    return { foodstuff: newFoodstuff, isNew: true };
+  }
+
+  /**
+   * Bulk purchase with foodstuff names instead of IDs
+   * Automatically creates foodstuffs if they don't exist
+   */
+  async bulkPurchaseByName(bulkPurchaseDto: BulkPurchaseByNameReqDto, userId: string): Promise<BulkPurchaseByNameResDto> {
+    const results: any[] = [];
+    let newFoodstuffsCreated = 0;
+    let existingFoodstuffsUpdated = 0;
+    let totalCost = 0;
+
+    for (const purchaseItem of bulkPurchaseDto.purchases) {
+      // Find or create the foodstuff
+      const { foodstuff, isNew } = await this.findOrCreateFoodstuff(purchaseItem.name, purchaseItem.unit);
+
+      if (isNew) {
+        newFoodstuffsCreated++;
+      } else {
+        existingFoodstuffsUpdated++;
+      }
+
+      // Create purchase activity
+      const activityData: any = {
+        foodstuffId: foodstuff._id,
+        actionType: ActionType.PURCHASE,
+        quantityChanged: purchaseItem.quantityChanged,
+        unitCost: purchaseItem.unitCost,
+        totalCost: purchaseItem.totalCost,
+        reason: purchaseItem.reason,
+        doneBy: userId,
+      };
+
+      // // Add requisitionId if provided
+      // if (purchaseItem.requisitionId) {
+      //   activityData.requisitionId = purchaseItem.requisitionId;
+      // }
+
+      const activity = await this.foodstuffHistoryRepository.create(activityData);
+      console.log('Activity created:', activity);
+
+      if (!activity) {
+        throw new BadRequestException('Failed to create purchase activity');
+      }
+
+      // Update foodstuff quantity and average cost
+      const newQuantity = foodstuff.currentQuantity + purchaseItem.quantityChanged;
+      const totalValue = foodstuff.currentQuantity * foodstuff.averageCostPrice + purchaseItem.totalCost;
+      const newAverageCost = newQuantity > 0 ? totalValue / newQuantity : 0;
+
+      const updatedFoodstuff = await this.foodstuffRepository.update(
+        { _id: foodstuff._id },
+        {
+          currentQuantity: newQuantity,
+          averageCostPrice: newAverageCost,
+          lastUpdateDate: new Date(),
+        },
+      );
+
+      // Populate the activity for response
+      const populatedActivity = await this.foodstuffHistoryRepository.findAllAndPopulate({ _id: activity._id }, [
+        { path: 'doneBy', select: 'firstName lastName email' },
+        { path: 'requisitionId', select: 'requisitionNumber' },
+      ]);
+
+      results.push({
+        name: purchaseItem.name,
+        isNewFoodstuff: isNew,
+        activity: populatedActivity[0],
+        foodstuff: updatedFoodstuff,
+      });
+
+      totalCost += purchaseItem.totalCost;
+    }
+
+    return {
+      message: 'Bulk purchase completed successfully',
+      results,
+      summary: {
+        totalItems: bulkPurchaseDto.purchases.length,
+        newFoodstuffsCreated,
+        existingFoodstuffsUpdated,
+        totalCost,
+      },
+    };
   }
 }
