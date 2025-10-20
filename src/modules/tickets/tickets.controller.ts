@@ -153,7 +153,7 @@ export class TicketsController {
   }
 
   @Get('cashier/issued-stats')
-  @Roles(UserRole.CASHIER, UserRole.ADMIN)
+  @Roles(UserRole.CASHIER, UserRole.ADMIN, UserRole.VENDOR)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get cashier issued tickets statistics' })
   @ApiResponse({ status: 200, description: 'Cashier issued tickets statistics retrieved successfully', type: CashierIssuedStatsResDto })
