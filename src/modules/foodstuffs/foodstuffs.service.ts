@@ -165,17 +165,17 @@ export class FoodstuffsService {
     }
 
     // Validate usage activity - must have cookedFoodNameId
-    if (addActivityDto.actionType === ActionType.USAGE) {
-      if (!addActivityDto.cookedFoodNameId) {
-        throw new BadRequestException('Cooked food name ID is required for usage activities');
-      }
+    // if (addActivityDto.actionType === ActionType.USAGE) {
+    //   if (!addActivityDto.cookedFoodNameId) {
+    //     throw new BadRequestException('Cooked food name ID is required for usage activities');
+    //   }
 
-      // Verify cooked food name exists
-      const cookedFoodName = await this.cookedFoodNameRepository.findOne({ _id: addActivityDto.cookedFoodNameId });
-      if (!cookedFoodName) {
-        throw new NotFoundException('Cooked food name not found');
-      }
-    }
+    //   // Verify cooked food name exists
+    //   const cookedFoodName = await this.cookedFoodNameRepository.findOne({ _id: addActivityDto.cookedFoodNameId });
+    //   if (!cookedFoodName) {
+    //     throw new NotFoundException('Cooked food name not found');
+    //   }
+    // }
 
     // Check for negative stock
     const newQuantity = foodstuff.currentQuantity + addActivityDto.quantityChanged;
