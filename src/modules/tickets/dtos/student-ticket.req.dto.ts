@@ -44,6 +44,15 @@ export class StudentTicketReqDto {
   @IsOptional()
   @IsDateString()
   expiryDate: string;
+
+  @ApiProperty({
+    description: 'Order ID',
+    example: '507f1f77bcf86cd799439011',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  order: string;
 }
 
 export class StudentBulkPurchaseReqDto {
@@ -108,4 +117,13 @@ export class StudentWalletTicketReqDto {
   @IsOptional()
   @IsDateString()
   expiryDate: string;
+
+  @ApiProperty({
+    description: 'Order ID',
+    example: '507f1f77bcf86cd799439011',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  order: string;
 }

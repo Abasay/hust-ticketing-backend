@@ -20,6 +20,7 @@ import {
   DashboardResDto,
   UpdateUserRoleReqDto,
   UpdateUserStatusReqDto,
+  DateRangeReqDto,
 } from './dtos';
 
 import { MailerService } from '../mailer/mailer.service';
@@ -520,20 +521,43 @@ export class AuthService {
     };
   }
 
-  async getDashboardStats(): Promise<DashboardResDto> {
-    // Get current month and last month date ranges
-    const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  async getDashboardStats(dateRangeDto?: DateRangeReqDto): Promise<DashboardResDto> {
+    let currentPeriodStart: Date;
+    let currentPeriodEnd: Date;
+    let previousPeriodStart: Date;
+    let previousPeriodEnd: Date;
 
-    // Calculate current month statistics
+    if (dateRangeDto?.startDate && dateRangeDto?.endDate) {
+      // Use provided date range
+      currentPeriodStart = new Date(dateRangeDto.startDate);
+      currentPeriodStart.setHours(0, 0, 0, 0);
+
+      currentPeriodEnd = new Date(dateRangeDto.endDate);
+      currentPeriodEnd.setHours(23, 59, 59, 999);
+
+      // Calculate previous period with same duration
+      const periodDuration = currentPeriodEnd.getTime() - currentPeriodStart.getTime();
+      previousPeriodEnd = new Date(currentPeriodStart.getTime() - 1);
+      previousPeriodEnd.setHours(23, 59, 59, 999);
+      previousPeriodStart = new Date(previousPeriodEnd.getTime() - periodDuration);
+      previousPeriodStart.setHours(0, 0, 0, 0);
+    } else {
+      // Default to current month vs last month
+      const now = new Date();
+      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      currentPeriodEnd = now;
+      previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      previousPeriodEnd.setHours(23, 59, 59, 999);
+    }
+
+    // Calculate current period statistics
     const currentMonthTickets = await this.ticketRepository.findAll({
-      createdAt: { $gte: currentMonthStart, $lte: now },
+      createdAt: { $gte: currentPeriodStart, $lte: currentPeriodEnd },
     });
 
     const lastMonthTickets = await this.ticketRepository.findAll({
-      createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+      createdAt: { $gte: previousPeriodStart, $lte: previousPeriodEnd },
     });
 
     // Calculate total revenue

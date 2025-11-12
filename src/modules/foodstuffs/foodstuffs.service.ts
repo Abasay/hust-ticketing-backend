@@ -32,17 +32,19 @@ export class FoodstuffsService {
     private readonly cookedFoodNameRepository: BaseRepository<CookedFoodName>,
   ) {}
 
-  async createFoodstuff(createFoodstuffDto: CreateFoodstuffReqDto): Promise<any> {
+  async createFoodstuff(storeType: string, createFoodstuffDto: CreateFoodstuffReqDto): Promise<any> {
     const existingFoodstuff = await this.foodstuffRepository.findOne({
       name: { $regex: new RegExp(`^${createFoodstuffDto.name}$`, 'i') },
+      storeType,
     });
 
     if (existingFoodstuff) {
-      throw new BadRequestException('Foodstuff with this name already exists');
+      throw new BadRequestException('Foodstuff with this name already exists in this store');
     }
 
     const foodstuff = await this.foodstuffRepository.create({
       ...createFoodstuffDto,
+      storeType,
       currentQuantity: createFoodstuffDto.currentQuantity || 0,
     });
 
@@ -52,11 +54,11 @@ export class FoodstuffsService {
     };
   }
 
-  async getAllFoodstuffs(query: GetFoodstuffReqDto) {
+  async getAllFoodstuffs(storeType: string, query: GetFoodstuffReqDto) {
     const { page = 1, limit = 10, search, unit, lowStock, sortBy = 'name', sortOrder = 'asc' } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = {};
+    const filter: any = { storeType };
 
     if (search) {
       filter.name = { $regex: search, $options: 'i' };
@@ -94,8 +96,8 @@ export class FoodstuffsService {
     };
   }
 
-  async getFoodstuffById(id: string) {
-    const foodstuff = await this.foodstuffRepository.findOne({ _id: id });
+  async getFoodstuffById(storeType: string, id: string) {
+    const foodstuff = await this.foodstuffRepository.findOne({ _id: id, storeType });
     if (!foodstuff) {
       throw new NotFoundException('Foodstuff not found');
     }
@@ -106,8 +108,8 @@ export class FoodstuffsService {
     };
   }
 
-  async updateFoodstuff(id: string, updateFoodstuffDto: UpdateFoodstuffReqDto) {
-    const existingFoodstuff = await this.foodstuffRepository.findOne({ _id: id });
+  async updateFoodstuff(storeType: string, id: string, updateFoodstuffDto: UpdateFoodstuffReqDto) {
+    const existingFoodstuff = await this.foodstuffRepository.findOne({ _id: id, storeType });
     if (!existingFoodstuff) {
       throw new NotFoundException('Foodstuff not found');
     }
@@ -116,11 +118,12 @@ export class FoodstuffsService {
     if (updateFoodstuffDto.name && updateFoodstuffDto.name !== existingFoodstuff.name) {
       const duplicateFoodstuff = await this.foodstuffRepository.findOne({
         name: { $regex: new RegExp(`^${updateFoodstuffDto.name}$`, 'i') },
+        storeType,
         _id: { $ne: id },
       });
 
       if (duplicateFoodstuff) {
-        throw new BadRequestException('Foodstuff with this name already exists');
+        throw new BadRequestException('Foodstuff with this name already exists in this store');
       }
     }
 
@@ -132,8 +135,8 @@ export class FoodstuffsService {
     };
   }
 
-  async deleteFoodstuff(id: string) {
-    const foodstuff = await this.foodstuffRepository.findOne({ _id: id });
+  async deleteFoodstuff(storeType: string, id: string) {
+    const foodstuff = await this.foodstuffRepository.findOne({ _id: id, storeType });
     if (!foodstuff) {
       throw new NotFoundException('Foodstuff not found');
     }
@@ -151,8 +154,8 @@ export class FoodstuffsService {
     };
   }
 
-  async addActivity(foodstuffId: string, addActivityDto: AddActivityReqDto, userId: string) {
-    const foodstuff = await this.foodstuffRepository.findOne({ _id: foodstuffId });
+  async addActivity(storeType: string, foodstuffId: string, addActivityDto: AddActivityReqDto, userId: string) {
+    const foodstuff = await this.foodstuffRepository.findOne({ _id: foodstuffId, storeType });
     if (!foodstuff) {
       throw new NotFoundException('Foodstuff not found');
     }
@@ -187,6 +190,7 @@ export class FoodstuffsService {
     const activityData: any = {
       foodstuffId: new Types.ObjectId(foodstuffId),
       ...addActivityDto,
+      storeType,
       doneBy: userId,
     };
 
@@ -229,11 +233,14 @@ export class FoodstuffsService {
     };
   }
 
-  async getActivities(foodstuffId: string, query: GetActivitiesReqDto) {
+  async getActivities(storeType: string, foodstuffId: string, query: GetActivitiesReqDto) {
     const { page = 1, limit = 10, actionType, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = { foodstuffId: new Types.ObjectId(foodstuffId) };
+    const filter: any = {
+      foodstuffId: new Types.ObjectId(foodstuffId),
+      storeType
+    };
 
     if (actionType) {
       filter.actionType = actionType;
@@ -273,35 +280,38 @@ export class FoodstuffsService {
     };
   }
 
-  async getDashboard() {
+  async getDashboard(storeType: string) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const [totalFoodstuffs, lowStockItems, recentPurchases, recentUsage, recentWastage, allFoodstuffs, recentActivities, monthlySpending] =
       await Promise.all([
-        this.foodstuffRepository.count({}),
-        this.foodstuffRepository.count({ currentQuantity: { $lte: Constants.stockThresholds.low } }),
+        this.foodstuffRepository.count({ storeType }),
+        this.foodstuffRepository.count({ storeType, currentQuantity: { $lte: Constants.stockThresholds.low } }),
         this.foodstuffHistoryRepository.count({
+          storeType,
           actionType: ActionType.PURCHASE,
           createdAt: { $gte: thirtyDaysAgo },
         }),
         this.foodstuffHistoryRepository.count({
+          storeType,
           actionType: ActionType.USAGE,
           createdAt: { $gte: thirtyDaysAgo },
         }),
         this.foodstuffHistoryRepository.count({
+          storeType,
           actionType: ActionType.WASTAGE,
           createdAt: { $gte: thirtyDaysAgo },
         }),
-        this.foodstuffRepository.findAll({}),
+        this.foodstuffRepository.findAll({ storeType }),
         this.foodstuffHistoryRepository.findAllAndPopulate(
-          { createdAt: { $gte: thirtyDaysAgo } },
+          { storeType, createdAt: { $gte: thirtyDaysAgo } },
           { path: 'doneBy', select: 'firstName lastName' },
           { createdAt: -1 },
           0,
           10,
         ),
-        this.getMonthlySpending(),
+        this.getMonthlySpending(storeType),
       ]);
 
     // Calculate total inventory value
@@ -340,8 +350,9 @@ export class FoodstuffsService {
     };
   }
 
-  async getStockAlerts() {
+  async getStockAlerts(storeType: string) {
     const lowStockFoodstuffs = await this.foodstuffRepository.findAll({
+      storeType,
       currentQuantity: { $lte: Constants.stockThresholds.low },
     });
 
@@ -362,10 +373,10 @@ export class FoodstuffsService {
     };
   }
 
-  async generateReport(query: GenerateReportReqDto) {
+  async generateReport(storeType: string, query: GenerateReportReqDto) {
     const { type, startDate, endDate, foodstuffId, groupBy } = query;
 
-    let filter: any = {};
+    let filter: any = { storeType };
     let data: any[] = [];
     let summary = { totalItems: 0, totalValue: 0, totalQuantity: 0 };
 
@@ -410,7 +421,7 @@ export class FoodstuffsService {
         break;
 
       case ReportType.STOCK_LEVELS:
-        data = await this.foodstuffRepository.findAll(foodstuffId ? { _id: foodstuffId } : {});
+        data = await this.foodstuffRepository.findAll(foodstuffId ? { _id: foodstuffId, storeType } : { storeType });
         summary.totalItems = data.length;
         summary.totalValue = data.reduce((sum, item) => sum + item.currentQuantity * item.averageCostPrice, 0);
         summary.totalQuantity = data.reduce((sum, item) => sum + item.currentQuantity, 0);
@@ -440,13 +451,14 @@ export class FoodstuffsService {
     };
   }
 
-  private async getMonthlySpending() {
+  private async getMonthlySpending(storeType: string) {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
     const purchases = await this.foodstuffHistoryRepository.findAllAndPopulate(
       {
+        storeType,
         actionType: ActionType.PURCHASE,
         createdAt: { $gte: startOfMonth },
       },
@@ -503,10 +515,11 @@ export class FoodstuffsService {
    * Find or create a foodstuff by name (case-insensitive)
    * Ensures no duplication regardless of uppercase or lowercase
    */
-  private async findOrCreateFoodstuff(name: string, unit: string): Promise<{ foodstuff: Foodstuff; isNew: boolean }> {
-    // Search for existing foodstuff (case-insensitive)
+  private async findOrCreateFoodstuff(storeType: string, name: string, unit: string): Promise<{ foodstuff: Foodstuff; isNew: boolean }> {
+    // Search for existing foodstuff (case-insensitive) within the specific store
     const existingFoodstuff = await this.foodstuffRepository.findOne({
       name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+      storeType,
     });
 
     if (existingFoodstuff) {
@@ -517,6 +530,7 @@ export class FoodstuffsService {
     const newFoodstuff = await this.foodstuffRepository.create({
       name: name.trim(),
       unit: unit.trim(),
+      storeType,
       currentQuantity: 0,
       averageCostPrice: 0,
     });
@@ -528,7 +542,7 @@ export class FoodstuffsService {
    * Bulk purchase with foodstuff names instead of IDs
    * Automatically creates foodstuffs if they don't exist
    */
-  async bulkPurchaseByName(bulkPurchaseDto: BulkPurchaseByNameReqDto, userId: string): Promise<BulkPurchaseByNameResDto> {
+  async bulkPurchaseByName(storeType: string, bulkPurchaseDto: BulkPurchaseByNameReqDto, userId: string): Promise<BulkPurchaseByNameResDto> {
     const results: any[] = [];
     let newFoodstuffsCreated = 0;
     let existingFoodstuffsUpdated = 0;
@@ -536,7 +550,7 @@ export class FoodstuffsService {
 
     for (const purchaseItem of bulkPurchaseDto.purchases) {
       // Find or create the foodstuff
-      const { foodstuff, isNew } = await this.findOrCreateFoodstuff(purchaseItem.name, purchaseItem.unit);
+      const { foodstuff, isNew } = await this.findOrCreateFoodstuff(storeType, purchaseItem.name, purchaseItem.unit);
 
       if (isNew) {
         newFoodstuffsCreated++;
@@ -547,6 +561,7 @@ export class FoodstuffsService {
       // Create purchase activity
       const activityData: any = {
         foodstuffId: foodstuff._id,
+        storeType,
         actionType: ActionType.PURCHASE,
         quantityChanged: purchaseItem.quantityChanged,
         unitCost: purchaseItem.unitCost,

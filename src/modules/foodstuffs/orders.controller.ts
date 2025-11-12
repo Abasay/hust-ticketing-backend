@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, ValidationPipe } f
 import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dtos/create-order.dto';
+import { CreateOrderWithPaymentDto } from './dtos/create-order-with-payment.dto';
 import { OrderDto } from './dtos/order.dto';
 import { ReportDateRangeDto } from './dtos/reports.dto';
 
@@ -17,6 +18,50 @@ export class OrdersController {
   @Post()
   async createOrder(@Body(ValidationPipe) createOrderDto: CreateOrderDto) {
     return this.ordersService.createOrder(createOrderDto);
+  }
+
+  @ApiOperation({
+    summary: 'Create a new order with Paystack payment verification',
+    description: 'Verifies Paystack payment, creates order, and generates ticket without processing fee'
+  })
+  @ApiOkResponse({
+    description: 'Order created successfully with ticket generated',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Order created successfully and ticket generated' },
+        order: {
+          type: 'object',
+          properties: {
+            orderId: { type: 'string', example: 'ABC12' },
+            processingFee: { type: 'number', example: 0 },
+            status: { type: 'string', example: 'FULFILLED' }
+          }
+        },
+        ticket: {
+          type: 'object',
+          properties: {
+            ticketNo: { type: 'string', example: 'TKT-A1B2C' },
+            amount: { type: 'number', example: 5000 },
+            status: { type: 'string', example: 'ISSUED' }
+          }
+        },
+        paymentVerification: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            amount: { type: 'number', example: 5000 },
+            currency: { type: 'string', example: 'NGN' }
+          }
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({ description: 'Payment verification failed or invalid request body' })
+  @HttpCode(201)
+  @Post('with-payment')
+  async createOrderWithPayment(@Body(ValidationPipe) createOrderDto: CreateOrderWithPaymentDto) {
+    return this.ordersService.createOrderWithPayment(createOrderDto);
   }
 
   @ApiOperation({ summary: 'Get Menu Items' })

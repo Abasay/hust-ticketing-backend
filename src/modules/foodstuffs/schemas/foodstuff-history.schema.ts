@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { DatabaseModelNames } from 'src/shared/constants';
+import { StoreType } from './foodstuff.schema';
 
 export type FoodstuffHistoryDocument = FoodstuffHistory & Document;
 
@@ -41,6 +42,14 @@ export class FoodstuffHistory extends Document {
   // New field: Link to requisition if this activity fulfills a requisition
   @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.FOODSTUFF_REQUISITION })
   requisitionId?: Types.ObjectId;
+
+  // Store type for filtering activities by store
+  @Prop({ required: true, enum: Object.values(StoreType) })
+  storeType: string;
+
+  // Recipient name (simple string field, not a reference)
+  @Prop({ type: String, trim: true })
+  recipient?: string;
 }
 
 export const FoodstuffHistorySchema = SchemaFactory.createForClass(FoodstuffHistory);
