@@ -17,7 +17,7 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderDto })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
   @HttpCode(201)
-  @Post()
+  @Post('/order/create')
   async createOrder(@Body(ValidationPipe) createOrderDto: CreateOrderDto) {
     return this.ordersService.createOrder(createOrderDto);
   }
@@ -70,7 +70,7 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderDto })
   @ApiBadRequestResponse({ description: 'Menu Items not found' })
   @HttpCode(200)
-  @Get('menu-items')
+  @Get('menu-items/users/general')
   async getMenuItems() {
     return this.ordersService.getMenuItems();
   }
@@ -79,7 +79,7 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderDto })
   @ApiBadRequestResponse({ description: 'Order not found' })
   @HttpCode(200)
-  @Get('order/:orderId')
+  @Get('order/operators/:orderId')
   async getOrderByOrderId(@Param('orderId') orderId: string) {
     return this.ordersService.getOrderByOrderId(orderId);
   }
@@ -88,7 +88,7 @@ export class OrdersController {
   @ApiOkResponse({ description: 'Report generated successfully' })
   @ApiBadRequestResponse({ description: 'Invalid query parameters' })
   @HttpCode(200)
-  @Get('report')
+  @Get('admin/report')
   async getOrdersReport(@Query(ValidationPipe) dateRange: ReportDateRangeDto) {
     return this.ordersService.getOrdersReport(dateRange);
   }
