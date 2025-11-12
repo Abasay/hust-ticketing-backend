@@ -11,6 +11,8 @@ import { ReportDateRangeDto } from './dtos/reports.dto';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  //Fix
+
   @ApiOperation({ summary: 'Create a new order' })
   @ApiOkResponse({ type: OrderDto })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
@@ -22,7 +24,7 @@ export class OrdersController {
 
   @ApiOperation({
     summary: 'Create a new order with Paystack payment verification',
-    description: 'Verifies Paystack payment, creates order, and generates ticket without processing fee'
+    description: 'Verifies Paystack payment, creates order, and generates ticket without processing fee',
   })
   @ApiOkResponse({
     description: 'Order created successfully with ticket generated',
@@ -35,27 +37,27 @@ export class OrdersController {
           properties: {
             orderId: { type: 'string', example: 'ABC12' },
             processingFee: { type: 'number', example: 0 },
-            status: { type: 'string', example: 'FULFILLED' }
-          }
+            status: { type: 'string', example: 'FULFILLED' },
+          },
         },
         ticket: {
           type: 'object',
           properties: {
             ticketNo: { type: 'string', example: 'TKT-A1B2C' },
             amount: { type: 'number', example: 5000 },
-            status: { type: 'string', example: 'ISSUED' }
-          }
+            status: { type: 'string', example: 'ISSUED' },
+          },
         },
         paymentVerification: {
           type: 'object',
           properties: {
             success: { type: 'boolean', example: true },
             amount: { type: 'number', example: 5000 },
-            currency: { type: 'string', example: 'NGN' }
-          }
-        }
-      }
-    }
+            currency: { type: 'string', example: 'NGN' },
+          },
+        },
+      },
+    },
   })
   @ApiBadRequestResponse({ description: 'Payment verification failed or invalid request body' })
   @HttpCode(201)
