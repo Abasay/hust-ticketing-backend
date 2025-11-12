@@ -6,6 +6,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { UserRole } from 'src/shared/constants';
+import { DateRangeReqDto } from '../auth/dtos';
 import {
   GenerateTicketReqDto,
   GenerateTicketResDto,
@@ -123,8 +124,8 @@ export class TicketsController {
   @ApiResponse({ status: 200, description: 'Admin ticket statistics retrieved successfully', type: AdminTicketStatsResDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
-  async getAdminTicketStats(): Promise<AdminTicketStatsResDto> {
-    return this.ticketsService.getAdminTicketStats();
+  async getAdminTicketStats(@Query() dateRangeDto: DateRangeReqDto): Promise<AdminTicketStatsResDto> {
+    return this.ticketsService.getAdminTicketStats(dateRangeDto);
   }
 
   @Get('by-number/:ticketNo')

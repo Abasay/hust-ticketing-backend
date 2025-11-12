@@ -3,9 +3,15 @@ import { Document } from 'mongoose';
 
 export type FoodstuffDocument = Foodstuff & Document;
 
+export enum StoreType {
+  BAKERY = 'bakery',
+  KITCHEN = 'kitchen',
+  GENERAL = 'general',
+}
+
 @Schema({ timestamps: true })
 export class Foodstuff extends Document {
-  @Prop({ required: true, unique: true, trim: true })
+  @Prop({ required: true, trim: true })
   name: string;
 
   @Prop({ required: true, trim: true })
@@ -19,6 +25,12 @@ export class Foodstuff extends Document {
 
   @Prop({ type: Date, default: Date.now })
   lastUpdateDate: Date;
+
+  @Prop({ required: true, enum: Object.values(StoreType), default: StoreType.GENERAL })
+  storeType: string;
 }
 
 export const FoodstuffSchema = SchemaFactory.createForClass(Foodstuff);
+
+// Create compound unique index: name + storeType
+FoodstuffSchema.index({ name: 1, storeType: 1 }, { unique: true });

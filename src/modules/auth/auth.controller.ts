@@ -27,6 +27,7 @@ import {
   DashboardResDto,
   UpdateUserRoleReqDto,
   UpdateUserStatusReqDto,
+  DateRangeReqDto,
 } from './dtos';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
@@ -273,8 +274,8 @@ export class AuthController {
   })
   @HttpCode(200)
   @Get('dashboard')
-  async getDashboardStats(): Promise<DashboardResDto> {
-    return this.authService.getDashboardStats();
+  async getDashboardStats(@Query() dateRangeDto: DateRangeReqDto): Promise<DashboardResDto> {
+    return this.authService.getDashboardStats(dateRangeDto);
   }
 
   @ApiBearerAuth()

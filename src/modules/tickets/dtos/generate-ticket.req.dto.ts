@@ -22,6 +22,15 @@ export class GenerateTicketReqDto {
   ticketType: string;
 
   @ApiProperty({
+    description: 'Mode of ticket being generated',
+    // enum: TicketType,
+    example: 'ORDER_TICKET',
+  })
+  @IsNotEmpty()
+  // @IsEnum(TicketType)
+  ticketNode: string;
+
+  @ApiProperty({
     description: 'Amount paid for the ticket',
     example: 500,
     minimum: 1,

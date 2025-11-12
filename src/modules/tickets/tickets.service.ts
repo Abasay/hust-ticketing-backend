@@ -38,6 +38,7 @@ import {
   StudentTicketReqDto,
   StudentTicketResDto,
 } from './dtos';
+import { DateRangeReqDto } from '../auth/dtos';
 import { Ticket } from './ticket.schema';
 import { User } from '../user/user.schema';
 import { Transaction } from '../transactions/transaction.schema';
@@ -148,6 +149,8 @@ export class TicketsService {
       if (order.status !== OrderStatus.PENDING) {
         throw new BadRequestException('Order already fulfilled');
       }
+
+      console.log(order);
 
       generateTicketDto.amount =
         order.orders.reduce((total, item) => total + item.pricePerQuantity * item.quantity, 0) + order.processingFee || 0;
@@ -461,12 +464,24 @@ export class TicketsService {
     };
   }
 
-  async getAdminTicketStats(): Promise<AdminTicketStatsResDto> {
-    // Get overall ticket counts
+  async getAdminTicketStats(dateRangeDto?: DateRangeReqDto): Promise<AdminTicketStatsResDto> {
+    // Build date filter if date range is provided
+    const dateFilter: any = {};
+    if (dateRangeDto?.startDate && dateRangeDto?.endDate) {
+      const startDate = new Date(dateRangeDto.startDate);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(dateRangeDto.endDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      dateFilter.createdAt = { $gte: startDate, $lte: endDate };
+    }
+
+    // Get overall ticket counts (with optional date filter)
     const [issued, redeemed, expired] = await Promise.all([
-      this.ticketRepository.count({ status: TicketStatus.ISSUED }),
-      this.ticketRepository.count({ status: TicketStatus.REDEEMED }),
-      this.ticketRepository.count({ status: TicketStatus.EXPIRED }),
+      this.ticketRepository.count({ status: TicketStatus.ISSUED, ...dateFilter }),
+      this.ticketRepository.count({ status: TicketStatus.REDEEMED, ...dateFilter }),
+      this.ticketRepository.count({ status: TicketStatus.EXPIRED, ...dateFilter }),
     ]);
 
     // Calculate pending (issued tickets that haven't expired)
@@ -474,12 +489,13 @@ export class TicketsService {
     const pending = await this.ticketRepository.count({
       status: TicketStatus.ISSUED,
       expiry: { $gt: now }, // Use 'expiry' field name from schema
+      ...dateFilter,
     });
 
     const total = issued + redeemed + expired;
 
-    // Get all tickets for revenue and breakdown calculations
-    const allTickets = await this.ticketRepository.findAll({});
+    // Get all tickets for revenue and breakdown calculations (with optional date filter)
+    const allTickets = await this.ticketRepository.findAll(dateFilter);
 
     // Calculate total revenue (only from redeemed tickets)
     const totalRevenue = allTickets
@@ -944,6 +960,8 @@ export class TicketsService {
       amount: studentTicketDto.amount,
       paymentType: studentTicketDto.paymentType,
       expiryDate: studentTicketDto.expiryDate,
+      ticketNode: 'STUDENT_ORDER_TICKET',
+      order: studentTicketDto.order,
     };
 
     const result = await this.generateTicket(generateTicketDto, cashierId);
@@ -972,7 +990,7 @@ export class TicketsService {
       student = await this.userRepository.create({
         firstName: 'Student',
         lastName: bulkPurchaseDto.matricNumber,
-        email: `${bulkPurchaseDto.matricNumber}@temp.edu`,
+        email: `${bulkPurchaseDto.matricNumber}@hust.edu.ng`,
         password: null,
         role: UserRole.STUDENT,
         matricNumber: bulkPurchaseDto.matricNumber,
@@ -1042,6 +1060,8 @@ export class TicketsService {
       amount: walletTicketDto.amount,
       paymentType: PaymentType.WALLET,
       expiryDate: walletTicketDto.expiryDate,
+      order: walletTicketDto.order,
+      ticketNode: 'STUDENT_ORDER_TICKET',
     };
 
     const result = await this.generateTicket(generateTicketDto, cashierId);
@@ -1067,7 +1087,7 @@ export class TicketsService {
 
   // Faculty ticket generation
   async generateFacultyTickets(facultyTicketDto: FacultyTicketReqDto, cashierId: string): Promise<FacultyTicketResDto> {
-    const { staffIds, ticketType, totalAmount, paymentType, expiryDate } = facultyTicketDto;
+    const { staffIds, ticketType, totalAmount, paymentType, expiryDate, order } = facultyTicketDto;
 
     // Validate amount divisibility
     if (totalAmount % staffIds.length !== 0) {
@@ -1102,6 +1122,8 @@ export class TicketsService {
         amount: amountPerTicket,
         paymentType,
         expiryDate,
+        ticketNode: 'STAFF_ORDER_TICKET',
+        order,
       };
 
       const result = await this.generateTicket(generateTicketDto, cashierId);

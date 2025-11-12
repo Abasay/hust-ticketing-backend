@@ -15,9 +15,11 @@ import { RequisitionsService } from './requisitions.service';
 import { RequisitionsController } from './requisitions.controller';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
+import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [MongooseModelsModule, RepositoryModule],
+  imports: [MongooseModelsModule, RepositoryModule, HttpModule, ConfigModule],
   controllers: [
     FoodstuffsController,
     CookedFoodNamesController,

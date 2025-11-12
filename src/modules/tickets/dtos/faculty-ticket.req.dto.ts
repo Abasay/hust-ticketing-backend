@@ -86,6 +86,15 @@ export class FacultyTicketReqDto {
   @IsOptional()
   @IsDateString()
   expiryDate: string;
+
+  @ApiProperty({
+    description: 'Order ID',
+    example: '507f1f77bcf86cd799439011',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  order: string;
 }
 
 export class GetStaffTicketsReqDto {

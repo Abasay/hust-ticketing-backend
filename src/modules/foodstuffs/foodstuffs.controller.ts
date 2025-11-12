@@ -26,7 +26,7 @@ import {
 } from './dtos';
 
 @ApiTags('Foodstuffs')
-@Controller('foodstuffs')
+@Controller('foodstuffs/:storeType')
 @UseGuards(JwtUserAuthGuard, RolesGuard)
 @ApiBearerAuth()
 @Roles(UserRole.ADMIN, UserRole.STORE_MANAGER)
@@ -38,43 +38,55 @@ export class FoodstuffsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new foodstuff (Admin only)' })
   @ApiResponse({ status: 201, description: 'Foodstuff created successfully', type: CreateFoodstuffResDto })
-  async createFoodstuff(@Body(ValidationPipe) createFoodstuffDto: CreateFoodstuffReqDto): Promise<CreateFoodstuffResDto> {
-    return this.foodstuffsService.createFoodstuff(createFoodstuffDto);
+  async createFoodstuff(
+    @Param('storeType') storeType: string,
+    @Body(ValidationPipe) createFoodstuffDto: CreateFoodstuffReqDto
+  ): Promise<CreateFoodstuffResDto> {
+    return this.foodstuffsService.createFoodstuff(storeType, createFoodstuffDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all foodstuffs with filtering and pagination' })
-  async getAllFoodstuffs(@Query() query: any) {
-    return this.foodstuffsService.getAllFoodstuffs(query);
+  async getAllFoodstuffs(
+    @Param('storeType') storeType: string,
+    @Query() query: any
+  ) {
+    return this.foodstuffsService.getAllFoodstuffs(storeType, query);
   }
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard statistics and data' })
   @ApiResponse({ status: 200, description: 'Dashboard data retrieved successfully', type: DashboardResDto })
-  async getDashboard() {
-    return this.foodstuffsService.getDashboard();
+  async getDashboard(@Param('storeType') storeType: string) {
+    return this.foodstuffsService.getDashboard(storeType);
   }
 
   @Get('stock-alerts')
   @ApiOperation({ summary: 'Get current stock alerts' })
   @ApiResponse({ status: 200, description: 'Stock alerts retrieved successfully', type: StockAlertsResDto })
-  async getStockAlerts() {
-    return this.foodstuffsService.getStockAlerts();
+  async getStockAlerts(@Param('storeType') storeType: string) {
+    return this.foodstuffsService.getStockAlerts(storeType);
   }
 
   @Get('reports')
   @ApiOperation({ summary: 'Generate various reports' })
   @ApiResponse({ status: 200, description: 'Report generated successfully', type: ReportResDto })
-  async generateReport(@Query(ValidationPipe) query: GenerateReportReqDto): Promise<ReportResDto> {
-    return this.foodstuffsService.generateReport(query);
+  async generateReport(
+    @Param('storeType') storeType: string,
+    @Query(ValidationPipe) query: GenerateReportReqDto
+  ): Promise<ReportResDto> {
+    return this.foodstuffsService.generateReport(storeType, query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific foodstuff by ID' })
   @ApiResponse({ status: 200, description: 'Foodstuff retrieved successfully', type: GetFoodstuffResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
-  async getFoodstuffById(@Param('id') id: string) {
-    return this.foodstuffsService.getFoodstuffById(id);
+  async getFoodstuffById(
+    @Param('storeType') storeType: string,
+    @Param('id') id: string
+  ) {
+    return this.foodstuffsService.getFoodstuffById(storeType, id);
   }
 
   @Put(':id')
@@ -82,10 +94,11 @@ export class FoodstuffsController {
   @ApiResponse({ status: 200, description: 'Foodstuff updated successfully', type: UpdateFoodstuffResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
   async updateFoodstuff(
+    @Param('storeType') storeType: string,
     @Param('id') id: string,
     @Body(ValidationPipe) updateFoodstuffDto: UpdateFoodstuffReqDto,
   ): Promise<UpdateFoodstuffResDto> {
-    return this.foodstuffsService.updateFoodstuff(id, updateFoodstuffDto);
+    return this.foodstuffsService.updateFoodstuff(storeType, id, updateFoodstuffDto);
   }
 
   @Delete(':id')
@@ -93,8 +106,11 @@ export class FoodstuffsController {
   @ApiResponse({ status: 200, description: 'Foodstuff deleted successfully', type: DeleteFoodstuffResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
   @ApiResponse({ status: 400, description: 'Cannot delete foodstuff with existing activities' })
-  async deleteFoodstuff(@Param('id') id: string): Promise<DeleteFoodstuffResDto> {
-    return this.foodstuffsService.deleteFoodstuff(id);
+  async deleteFoodstuff(
+    @Param('storeType') storeType: string,
+    @Param('id') id: string
+  ): Promise<DeleteFoodstuffResDto> {
+    return this.foodstuffsService.deleteFoodstuff(storeType, id);
   }
 
   // Activity Management
@@ -104,19 +120,24 @@ export class FoodstuffsController {
   @ApiResponse({ status: 201, description: 'Activity added successfully', type: AddActivityResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
   async addActivity(
+    @Param('storeType') storeType: string,
     @Param('id') foodstuffId: string,
     @Body(ValidationPipe) addActivityDto: AddActivityReqDto,
     @GetUser() user: any,
   ): Promise<AddActivityResDto> {
-    return this.foodstuffsService.addActivity(foodstuffId, addActivityDto, user._id);
+    return this.foodstuffsService.addActivity(storeType, foodstuffId, addActivityDto, user._id);
   }
 
   @Get(':id/activities')
   @ApiOperation({ summary: 'Get activity history for a specific foodstuff' })
   @ApiResponse({ status: 200, description: 'Activities retrieved successfully', type: GetActivitiesResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
-  async getActivities(@Param('id') foodstuffId: string, @Query(ValidationPipe) query: GetActivitiesReqDto): Promise<GetActivitiesResDto> {
-    return this.foodstuffsService.getActivities(foodstuffId, query);
+  async getActivities(
+    @Param('storeType') storeType: string,
+    @Param('id') foodstuffId: string,
+    @Query(ValidationPipe) query: GetActivitiesReqDto
+  ): Promise<GetActivitiesResDto> {
+    return this.foodstuffsService.getActivities(storeType, foodstuffId, query);
   }
 
   // Bulk Purchase Operations
@@ -129,9 +150,10 @@ export class FoodstuffsController {
   @ApiResponse({ status: 201, description: 'Bulk purchase completed successfully', type: BulkPurchaseByNameResDto })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   async bulkPurchaseByName(
+    @Param('storeType') storeType: string,
     @Body(ValidationPipe) bulkPurchaseDto: BulkPurchaseByNameReqDto,
     @GetUser() user: any,
   ): Promise<BulkPurchaseByNameResDto> {
-    return this.foodstuffsService.bulkPurchaseByName(bulkPurchaseDto, user._id);
+    return this.foodstuffsService.bulkPurchaseByName(storeType, bulkPurchaseDto, user._id);
   }
 }
