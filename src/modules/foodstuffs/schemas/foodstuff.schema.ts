@@ -7,6 +7,7 @@ export enum StoreType {
   BAKERY = 'bakery',
   KITCHEN = 'kitchen',
   GENERAL = 'general',
+  MAIN_STORE = 'main_store',
 }
 
 @Schema({ timestamps: true })
