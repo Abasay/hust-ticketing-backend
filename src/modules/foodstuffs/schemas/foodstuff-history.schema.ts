@@ -35,6 +35,9 @@ export class FoodstuffHistory extends Document {
   @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.USER, required: true })
   doneBy: Types.ObjectId;
 
+  @Prop({ type: Date, required: false })
+  date?: Date;
+
   // New field: Link to cooked food name for USAGE activities
   @Prop({ type: Types.ObjectId, ref: DatabaseModelNames.COOKED_FOOD_NAME })
   cookedFoodNameId?: Types.ObjectId;
@@ -50,6 +53,9 @@ export class FoodstuffHistory extends Document {
   // Recipient name (simple string field, not a reference)
   @Prop({ type: String, trim: true })
   recipient?: string;
+
+  @Prop({ type: String, trim: true })
+  disbursedBy?: string;
 }
 
 export const FoodstuffHistorySchema = SchemaFactory.createForClass(FoodstuffHistory);

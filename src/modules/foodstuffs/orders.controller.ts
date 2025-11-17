@@ -1,10 +1,14 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, ValidationPipe } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards, ValidationPipe } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { CreateOrderWithPaymentDto } from './dtos/create-order-with-payment.dto';
 import { OrderDto } from './dtos/order.dto';
 import { ReportDateRangeDto } from './dtos/reports.dto';
+import { JwtUserAuthGuard } from '../auth/guards/jwt-user-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from 'src/shared/constants';
 
 @ApiTags('Foodstuffs/Orders')
 @Controller('foodstuffs/orders')
@@ -84,6 +88,9 @@ export class OrdersController {
     return this.ordersService.getOrderByOrderId(orderId);
   }
 
+  @UseGuards(JwtUserAuthGuard, RolesGuard)
+  @ApiBearerAuth()
+  @Roles(UserRole.ADMIN, UserRole.STORE_MANAGER)
   @ApiOperation({ summary: 'Get orders report' })
   @ApiOkResponse({ description: 'Report generated successfully' })
   @ApiBadRequestResponse({ description: 'Invalid query parameters' })
