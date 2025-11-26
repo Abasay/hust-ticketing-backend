@@ -10,6 +10,13 @@ export enum StoreType {
   MAIN_STORE = 'main_store',
 }
 
+export interface StockData {
+  month: string;
+  type: 'opening' | 'closing';
+  value: number;
+  date: Date;
+}
+
 @Schema({ timestamps: true })
 export class Foodstuff extends Document {
   @Prop({ required: true, trim: true })
@@ -29,6 +36,13 @@ export class Foodstuff extends Document {
 
   @Prop({ required: true, enum: Object.values(StoreType), default: StoreType.GENERAL })
   storeType: string;
+
+  @Prop({
+    // required: true,
+    type: Array,
+    default: [],
+  })
+  stocks: StockData[];
 }
 
 export const FoodstuffSchema = SchemaFactory.createForClass(Foodstuff);

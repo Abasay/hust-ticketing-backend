@@ -40,17 +40,15 @@ export class FoodstuffsController {
   @ApiResponse({ status: 201, description: 'Foodstuff created successfully', type: CreateFoodstuffResDto })
   async createFoodstuff(
     @Param('storeType') storeType: string,
-    @Body(ValidationPipe) createFoodstuffDto: CreateFoodstuffReqDto
+    @Query('stockType') stockType: string,
+    @Body(ValidationPipe) createFoodstuffDto: CreateFoodstuffReqDto,
   ): Promise<CreateFoodstuffResDto> {
     return this.foodstuffsService.createFoodstuff(storeType, createFoodstuffDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all foodstuffs with filtering and pagination' })
-  async getAllFoodstuffs(
-    @Param('storeType') storeType: string,
-    @Query() query: any
-  ) {
+  async getAllFoodstuffs(@Param('storeType') storeType: string, @Query() query: any) {
     return this.foodstuffsService.getAllFoodstuffs(storeType, query);
   }
 
@@ -71,10 +69,7 @@ export class FoodstuffsController {
   @Get('reports')
   @ApiOperation({ summary: 'Generate various reports' })
   @ApiResponse({ status: 200, description: 'Report generated successfully', type: ReportResDto })
-  async generateReport(
-    @Param('storeType') storeType: string,
-    @Query(ValidationPipe) query: GenerateReportReqDto
-  ): Promise<ReportResDto> {
+  async generateReport(@Param('storeType') storeType: string, @Query(ValidationPipe) query: GenerateReportReqDto): Promise<ReportResDto> {
     return this.foodstuffsService.generateReport(storeType, query);
   }
 
@@ -82,10 +77,7 @@ export class FoodstuffsController {
   @ApiOperation({ summary: 'Get a specific foodstuff by ID' })
   @ApiResponse({ status: 200, description: 'Foodstuff retrieved successfully', type: GetFoodstuffResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
-  async getFoodstuffById(
-    @Param('storeType') storeType: string,
-    @Param('id') id: string
-  ) {
+  async getFoodstuffById(@Param('storeType') storeType: string, @Param('id') id: string) {
     return this.foodstuffsService.getFoodstuffById(storeType, id);
   }
 
@@ -106,10 +98,7 @@ export class FoodstuffsController {
   @ApiResponse({ status: 200, description: 'Foodstuff deleted successfully', type: DeleteFoodstuffResDto })
   @ApiResponse({ status: 404, description: 'Foodstuff not found' })
   @ApiResponse({ status: 400, description: 'Cannot delete foodstuff with existing activities' })
-  async deleteFoodstuff(
-    @Param('storeType') storeType: string,
-    @Param('id') id: string
-  ): Promise<DeleteFoodstuffResDto> {
+  async deleteFoodstuff(@Param('storeType') storeType: string, @Param('id') id: string): Promise<DeleteFoodstuffResDto> {
     return this.foodstuffsService.deleteFoodstuff(storeType, id);
   }
 
@@ -122,10 +111,12 @@ export class FoodstuffsController {
   async addActivity(
     @Param('storeType') storeType: string,
     @Param('id') foodstuffId: string,
+    @Query('stockType') stockType: string,
+    @Query('month') month: string,
     @Body(ValidationPipe) addActivityDto: AddActivityReqDto,
     @GetUser() user: any,
   ): Promise<AddActivityResDto> {
-    return this.foodstuffsService.addActivity(storeType, foodstuffId, addActivityDto, user._id);
+    return this.foodstuffsService.addActivity(storeType, foodstuffId, addActivityDto, user._id, month, stockType);
   }
 
   @Get(':id/activities')
@@ -135,7 +126,7 @@ export class FoodstuffsController {
   async getActivities(
     @Param('storeType') storeType: string,
     @Param('id') foodstuffId: string,
-    @Query(ValidationPipe) query: GetActivitiesReqDto
+    @Query(ValidationPipe) query: GetActivitiesReqDto,
   ): Promise<GetActivitiesResDto> {
     return this.foodstuffsService.getActivities(storeType, foodstuffId, query);
   }
@@ -145,15 +136,19 @@ export class FoodstuffsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create bulk purchase activities using foodstuff names',
-    description: 'This endpoint accepts an array of purchase items with foodstuff names and units. If a foodstuff does not exist, it will be created automatically. Names are matched case-insensitively to prevent duplicates.'
+    description:
+      'This endpoint accepts an array of purchase items with foodstuff names and units. If a foodstuff does not exist, it will be created automatically. Names are matched case-insensitively to prevent duplicates.',
   })
   @ApiResponse({ status: 201, description: 'Bulk purchase completed successfully', type: BulkPurchaseByNameResDto })
   @ApiResponse({ status: 400, description: 'Invalid request data' })
   async bulkPurchaseByName(
     @Param('storeType') storeType: string,
+    @Query('stockType') stockType: string,
+    @Query('month') month: string,
     @Body(ValidationPipe) bulkPurchaseDto: BulkPurchaseByNameReqDto,
     @GetUser() user: any,
   ): Promise<BulkPurchaseByNameResDto> {
-    return this.foodstuffsService.bulkPurchaseByName(storeType, bulkPurchaseDto, user._id);
+    console.log(stockType, month);
+    return this.foodstuffsService.bulkPurchaseByName(storeType, bulkPurchaseDto, user._id, stockType, month);
   }
 }

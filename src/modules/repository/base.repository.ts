@@ -80,6 +80,10 @@ export class BaseRepository<T> {
     return this.model.findOneAndDelete(filter).exec();
   }
 
+  async deleteMany(filter: FilterQuery<T>): Promise<any> {
+    return await this.model.deleteMany(filter);
+  }
+
   async findOneAndUpdate(
     filter: FilterQuery<T>,
     update: UpdateQuery<T>,

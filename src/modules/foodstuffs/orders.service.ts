@@ -135,9 +135,7 @@ export class OrdersService {
     const paymentVerification = await this.verifyPaystackPayment(createOrderDto.paymentReference);
 
     if (!paymentVerification.success) {
-      throw BadRequestException.VALIDATION_ERROR(
-        `Payment verification failed: ${paymentVerification.message}`,
-      );
+      throw BadRequestException.VALIDATION_ERROR(`Payment verification failed: ${paymentVerification.message}`);
     }
 
     this.logger.log(`Payment verified successfully for reference: ${createOrderDto.paymentReference}`);
@@ -286,13 +284,19 @@ export class OrdersService {
       { orderId },
       { path: 'orders.itemId', select: 'name pricePerQuantity category' },
     );
+
+    const populateOptions = [{ path: 'cashierId', select: 'firstName lastName email role' }];
+
     if (!order) {
       throw BadRequestException.RESOURCE_NOT_FOUND('Order not found');
     }
 
-    const ticket = await this.ticketRepository.findOne({
-      order: (order as any)._id,
-    });
+    const ticket = await this.ticketRepository.findOneAndPopulate(
+      {
+        order: (order as any)._id,
+      },
+      populateOptions,
+    );
     return {
       _id: (order as any)._id,
       orderId: order.orderId,
@@ -337,7 +341,7 @@ export class OrdersService {
       $lte: end,
     };
 
-    const orders = await this.orderRepository.findAllAndPopulate({ createdAt: dateQuery }, [
+    const orders = await this.orderRepository.findAllAndPopulate({ createdAt: dateQuery, status: OrderStatus.FULFILLED }, [
       {
         path: 'orders.itemId',
         select: 'name purchaseUnit measurementUnit',
@@ -458,5 +462,13 @@ export class OrdersService {
       pricePerQuantityForSold: orderItem.pricePerQuantity,
       amountRevenue: orderItem.quantity * orderItem.pricePerQuantity,
     });
+  }
+
+  async deleteManyOrders() {
+    const result = await this.orderRepository.deleteMany({
+      status: { $ne: OrderStatus.FULFILLED }, // adjust your condition
+    });
+
+    return result;
   }
 }

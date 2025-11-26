@@ -6,7 +6,7 @@ import { StoreType } from './foodstuff.schema';
 export type FoodstuffHistoryDocument = FoodstuffHistory & Document;
 
 export enum ActionType {
-  PURCHASE = 'purchase',
+  PURCHASE = 'purchase', // All kinds of increases in the stock openings, closings, brought-ins
   USAGE = 'usage',
   WASTAGE = 'wastage',
   CORRECTION = 'correction',

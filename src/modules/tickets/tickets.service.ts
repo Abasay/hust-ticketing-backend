@@ -140,6 +140,8 @@ export class TicketsService {
 
     let order: Order | null = null;
 
+    const populateOptions = [{ path: 'cashierId', select: 'firstName lastName email role' }];
+
     if (generateTicketDto.order) {
       order = await this.orderRepository.findById(generateTicketDto.order);
       if (!order) {
@@ -147,16 +149,52 @@ export class TicketsService {
       }
 
       if (order.status !== OrderStatus.PENDING) {
-        throw new BadRequestException('Order already fulfilled');
+        const ticket = await this.ticketRepository.findOneAndPopulate(
+          {
+            order: (order as any)._id,
+          },
+          populateOptions,
+        );
+        if (!ticket) {
+          throw new NotFoundException('Ticket not found');
+        }
+        return {
+          message: 'Ticket generated successfully',
+          ticket: {
+            ticketNo: ticket.ticketNo,
+            ticketType: ticket.ticketType,
+            amount: Number(ticket.amount), // Convert Decimal128 to number
+            paymentType: ticket.paymentType,
+            expiryDate: new Date(ticket.expiryDate).toISOString(),
+            status: ticket.status,
+            customer: ticket.customer
+              ? {
+                  _id: (ticket.customer as any)._id,
+                  firstName: (ticket.customer as any).firstName,
+                  lastName: (ticket.customer as any).lastName,
+                  email: (ticket.customer as any).email,
+                }
+              : 'Walk-in Customer',
+            cashier: {
+              _id: (ticket.cashierId as any)._id,
+              firstName: (ticket.cashierId as any).firstName,
+              lastName: (ticket.cashierId as any).lastName,
+              email: (ticket.cashierId as any).email,
+            },
+            createdAt: new Date((ticket as any).createdAt).toISOString(),
+          },
+        };
       }
-
-      console.log(order);
 
       generateTicketDto.amount =
         order.orders.reduce((total, item) => total + item.pricePerQuantity * item.quantity, 0) + order.processingFee || 0;
     }
 
     console.log(order);
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
 
     // Create ticket
     const ticketData = {
@@ -169,6 +207,7 @@ export class TicketsService {
       paymentType: generateTicketDto.paymentType,
       expiryDate: new Date(generateTicketDto.expiryDate),
       status: TicketStatus.ISSUED,
+      order: order ? (order as any)._id : null,
     };
 
     const ticket = await this.ticketRepository.create(ticketData as any);
@@ -178,7 +217,6 @@ export class TicketsService {
     }
 
     // Populate ticket with user details for response
-    const populateOptions = [{ path: 'cashierId', select: 'firstName lastName email role' }];
 
     // Only populate customer if it exists
     if (generateTicketDto.userId) {
@@ -349,7 +387,7 @@ export class TicketsService {
   }
 
   async getUserTickets(userId: string, filterDto: TicketFilterDto): Promise<TicketListResDto> {
-    const { page = 1, limit = 10, status, ticketType, search } = filterDto;
+    const { page = 1, limit = 10, status, ticketType, search, paymentType } = filterDto;
     const skip = (page - 1) * limit;
 
     // Build filter query
@@ -361,6 +399,10 @@ export class TicketsService {
 
     if (ticketType) {
       filter.ticketType = ticketType;
+    }
+
+    if (paymentType && paymentType !== 'all') {
+      filter.paymentType = paymentType;
     }
 
     if (search) {
