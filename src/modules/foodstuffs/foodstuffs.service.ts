@@ -573,117 +573,117 @@ export class FoodstuffsService {
     let existingFoodstuffsUpdated = 0;
     let totalCost = 0;
 
-    const allFoodStuffs = await this.foodstuffRepository.findAll({});
+    // const allFoodStuffs = await this.foodstuffRepository.findAll({});
 
-    for (const foodStuff of allFoodStuffs) {
-      const history = await this.foodstuffHistoryRepository.findAll({
-        foodstuffId: foodStuff._id,
-        actionType: 'purchase',
-      });
+    // for (const foodStuff of allFoodStuffs) {
+    //   const history = await this.foodstuffHistoryRepository.findAll({
+    //     foodstuffId: foodStuff._id,
+    //     actionType: 'purchase',
+    //   });
 
-      await this.foodstuffRepository.findOneAndUpdate(
-        {
-          _id: foodStuff._id,
-        },
-        {
-          stocks: [
-            ...foodStuff.stocks,
-            {
-              month: 'October',
-              value: history.reduce((acc, curr) => {
-                return acc + curr.quantityChanged;
-              }, 0),
-              date: new Date('2025-11-16T23:11:31.015+00:00'),
-              type: 'closing',
-            },
-          ],
-        },
-      );
-    }
-    return allFoodStuffs;
-
-    // for (const purchaseItem of bulkPurchaseDto.purchases) {
-    //   // Find or create the foodstuff
-    //   const { foodstuff, isNew } = await this.findOrCreateFoodstuff(storeType, purchaseItem.name, purchaseItem.unit);
-
-    //   if (isNew) {
-    //     newFoodstuffsCreated++;
-    //   } else {
-    //     existingFoodstuffsUpdated++;
-    //   }
-
-    //   // Create purchase activity
-    //   const activityData: any = {
-    //     foodstuffId: foodstuff._id,
-    //     storeType,
-    //     actionType: ActionType.PURCHASE,
-    //     quantityChanged: purchaseItem.quantityChanged,
-    //     unitCost: purchaseItem.unitCost,
-    //     totalCost: purchaseItem.totalCost,
-    //     reason: purchaseItem.reason,
-    //     doneBy: userId,
-    //   };
-
-    //   // // Add requisitionId if provided
-    //   // if (purchaseItem.requisitionId) {
-    //   //   activityData.requisitionId = purchaseItem.requisitionId;
-    //   // }
-
-    //   const activity = await this.foodstuffHistoryRepository.create(activityData);
-    //   console.log('Activity created:', activity);
-
-    //   if (!activity) {
-    //     throw new BadRequestException('Failed to create purchase activity');
-    //   }
-
-    //   // Update foodstuff quantity and average cost
-    //   const newQuantity = foodstuff.currentQuantity + purchaseItem.quantityChanged;
-    //   const totalValue = foodstuff.currentQuantity * foodstuff.averageCostPrice + purchaseItem.totalCost;
-    //   const newAverageCost = newQuantity > 0 ? totalValue / newQuantity : 0;
-
-    //   const updatedFoodstuff = await this.foodstuffRepository.update(
-    //     { _id: foodstuff._id },
+    //   await this.foodstuffRepository.findOneAndUpdate(
     //     {
-    //       currentQuantity: newQuantity,
-    //       averageCostPrice: newAverageCost,
-    //       lastUpdateDate: new Date(),
+    //       _id: foodStuff._id,
+    //     },
+    //     {
     //       stocks: [
-    //         ...foodstuff.stocks,
+    //         ...foodStuff.stocks,
     //         {
-    //           month,
-    //           type: stockType,
-    //           date: new Date(),
-    //           value: purchaseItem.quantityChanged,
+    //           month: 'October',
+    //           value: history.reduce((acc, curr) => {
+    //             return acc + curr.quantityChanged;
+    //           }, 0),
+    //           date: new Date('2025-11-16T23:11:31.015+00:00'),
+    //           type: 'closing',
     //         },
     //       ],
     //     },
     //   );
-
-    //   // Populate the activity for response
-    //   const populatedActivity = await this.foodstuffHistoryRepository.findAllAndPopulate({ _id: activity._id }, [
-    //     { path: 'doneBy', select: 'firstName lastName email' },
-    //     { path: 'requisitionId', select: 'requisitionNumber' },
-    //   ]);
-
-    //   results.push({
-    //     name: purchaseItem.name,
-    //     isNewFoodstuff: isNew,
-    //     activity: populatedActivity[0],
-    //     foodstuff: updatedFoodstuff,
-    //   });
-
-    //   totalCost += purchaseItem.totalCost;
     // }
+    // return allFoodStuffs;
 
-    // return {
-    //   message: 'Bulk purchase completed successfully',
-    //   results,
-    //   summary: {
-    //     totalItems: bulkPurchaseDto.purchases.length,
-    //     newFoodstuffsCreated,
-    //     existingFoodstuffsUpdated,
-    //     totalCost,
-    //   },
-    // };
+    for (const purchaseItem of bulkPurchaseDto.purchases) {
+      // Find or create the foodstuff
+      const { foodstuff, isNew } = await this.findOrCreateFoodstuff(storeType, purchaseItem.name, purchaseItem.unit);
+
+      if (isNew) {
+        newFoodstuffsCreated++;
+      } else {
+        existingFoodstuffsUpdated++;
+      }
+
+      // Create purchase activity
+      const activityData: any = {
+        foodstuffId: foodstuff._id,
+        storeType,
+        actionType: ActionType.PURCHASE,
+        quantityChanged: purchaseItem.quantityChanged,
+        unitCost: purchaseItem.unitCost,
+        totalCost: purchaseItem.totalCost,
+        reason: purchaseItem.reason,
+        doneBy: userId,
+      };
+
+      // // Add requisitionId if provided
+      // if (purchaseItem.requisitionId) {
+      //   activityData.requisitionId = purchaseItem.requisitionId;
+      // }
+
+      const activity = await this.foodstuffHistoryRepository.create(activityData);
+      console.log('Activity created:', activity);
+
+      if (!activity) {
+        throw new BadRequestException('Failed to create purchase activity');
+      }
+
+      // Update foodstuff quantity and average cost
+      const newQuantity = foodstuff.currentQuantity + purchaseItem.quantityChanged;
+      const totalValue = foodstuff.currentQuantity * foodstuff.averageCostPrice + purchaseItem.totalCost;
+      const newAverageCost = newQuantity > 0 ? totalValue / newQuantity : 0;
+
+      const updatedFoodstuff = await this.foodstuffRepository.update(
+        { _id: foodstuff._id },
+        {
+          currentQuantity: newQuantity,
+          averageCostPrice: newAverageCost,
+          lastUpdateDate: new Date(),
+          stocks: [
+            ...foodstuff.stocks,
+            {
+              month,
+              type: stockType,
+              date: new Date(),
+              value: purchaseItem.quantityChanged,
+            },
+          ],
+        },
+      );
+
+      // Populate the activity for response
+      const populatedActivity = await this.foodstuffHistoryRepository.findAllAndPopulate({ _id: activity._id }, [
+        { path: 'doneBy', select: 'firstName lastName email' },
+        { path: 'requisitionId', select: 'requisitionNumber' },
+      ]);
+
+      results.push({
+        name: purchaseItem.name,
+        isNewFoodstuff: isNew,
+        activity: populatedActivity[0],
+        foodstuff: updatedFoodstuff,
+      });
+
+      totalCost += purchaseItem.totalCost;
+    }
+
+    return {
+      message: 'Bulk purchase completed successfully',
+      results,
+      summary: {
+        totalItems: bulkPurchaseDto.purchases.length,
+        newFoodstuffsCreated,
+        existingFoodstuffsUpdated,
+        totalCost,
+      },
+    };
   }
 }
