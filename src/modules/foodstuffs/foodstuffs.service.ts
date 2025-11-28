@@ -96,6 +96,39 @@ export class FoodstuffsService {
     };
   }
 
+  async fetchFoodstuffReport(storeType: string) {
+    const allFoodstuffs = await this.foodstuffRepository.findAll({ storeType }, 0, 100000, { name: 1 });
+
+    const report = await Promise.all(
+      allFoodstuffs.map(async (foodstuff) => {
+        const history = await this.foodstuffHistoryRepository.findAll({ foodstuffId: foodstuff._id });
+
+        return {
+          ...foodstuff.toObject(),
+          histories: history,
+        };
+      }),
+    );
+    return {
+      foodstuffs: report,
+      message: 'Reports retrieved successfully',
+    };
+  }
+
+  async getAllFoodstuffsForCSV(storeType: string) {
+    //SORT BY NAMES
+    const allFoodstuffs = await this.foodstuffRepository.findAll({ storeType }, 0, 100000, { name: 1 });
+    return {
+      message: 'Foodstuffs retrieved successfully',
+      data: allFoodstuffs.map((foodstuff) => {
+        return {
+          name: foodstuff.name,
+          unit: foodstuff.unit,
+        };
+      }),
+    };
+  }
+
   async getFoodstuffById(storeType: string, id: string) {
     const foodstuff = await this.foodstuffRepository.findOne({ _id: id, storeType });
     if (!foodstuff) {

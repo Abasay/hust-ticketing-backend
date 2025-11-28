@@ -52,6 +52,18 @@ export class FoodstuffsController {
     return this.foodstuffsService.getAllFoodstuffs(storeType, query);
   }
 
+  @Get('/all-names/csv')
+  @ApiOperation({ summary: 'Get all foodstuffs with filtering and pagination' })
+  async getAllNamesForCSV(@Param('storeType') storeType: string) {
+    return this.foodstuffsService.getAllFoodstuffsForCSV(storeType);
+  }
+
+  @Get('/reports/all')
+  @ApiOperation({ summary: 'Get all store report' })
+  async getAllReport(@Param('storeType') storeType: string) {
+    return this.foodstuffsService.fetchFoodstuffReport(storeType);
+  }
+
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard statistics and data' })
   @ApiResponse({ status: 200, description: 'Dashboard data retrieved successfully', type: DashboardResDto })
