@@ -70,7 +70,7 @@ export class TicketsService {
 
   private generateTicketNumber(): string {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    const length = 5;
+    const length = 4;
 
     // Convert string to array to allow splicing (for no repetition)
     const charsArray = chars.split('');
