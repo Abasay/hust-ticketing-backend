@@ -1,7 +1,7 @@
 import { Controller, UseGuards, Post, Get, Put, Delete, Body, Param, Query, ValidationPipe, HttpCode, HttpStatus } from '@nestjs/common';
 import { FoodstuffsService } from './foodstuffs.service';
 import { JwtUserAuthGuard } from '../auth/guards/jwt-user-auth.guard';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { RolesGuard } from '../tickets/guards/roles.guard';
 import { Roles } from '../tickets/decorators/roles.decorator';
@@ -33,6 +33,8 @@ import {
 export class FoodstuffsController {
   constructor(private readonly foodstuffsService: FoodstuffsService) {}
 
+  // ========== POST ROUTES (specific routes first, then dynamic) ==========
+
   // CRUD Operations
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -46,15 +48,51 @@ export class FoodstuffsController {
     return this.foodstuffsService.createFoodstuff(storeType, createFoodstuffDto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all foodstuffs with filtering and pagination' })
-  async getAllFoodstuffs(@Param('storeType') storeType: string, @Query() query: any) {
-    return this.foodstuffsService.getAllFoodstuffs(storeType, query);
+  // Bulk Purchase Operations (must be before :id routes)
+  @Post('bulk-purchase-by-name')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create bulk purchase activities using foodstuff names',
+    description:
+      'This endpoint accepts an array of purchase items with foodstuff names and units. If a foodstuff does not exist, it will be created automatically. Names are matched case-insensitively to prevent duplicates.',
+  })
+  @ApiResponse({ status: 201, description: 'Bulk purchase completed successfully', type: BulkPurchaseByNameResDto })
+  @ApiResponse({ status: 400, description: 'Invalid request data' })
+  async bulkPurchaseByName(
+    @Param('storeType') storeType: string,
+    @Query('stockType') stockType: string,
+    @Query('month') month: string,
+    @Body(ValidationPipe) bulkPurchaseDto: BulkPurchaseByNameReqDto,
+    @GetUser() user: any,
+  ): Promise<BulkPurchaseByNameResDto> {
+    console.log(stockType, month);
+    return this.foodstuffsService.bulkPurchaseByName(storeType, bulkPurchaseDto, user._id, stockType, month);
   }
 
-  @Get('/all-names/csv')
-  @ApiOperation({ summary: 'Get all foodstuffs with filtering and pagination' })
+  // Activity Management (dynamic routes with :id)
+  @Post(':id/activities')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add activity to foodstuff (purchase, usage, wastage, correction)' })
+  @ApiResponse({ status: 201, description: 'Activity added successfully', type: AddActivityResDto })
+  @ApiResponse({ status: 404, description: 'Foodstuff not found' })
+  async addActivity(
+    @Param('storeType') storeType: string,
+    @Param('id') foodstuffId: string,
+    @Query('stockType') stockType: string,
+    @Query('month') month: string,
+    @Body(ValidationPipe) addActivityDto: AddActivityReqDto,
+    @GetUser() user: any,
+  ): Promise<AddActivityResDto> {
+    return this.foodstuffsService.addActivity(storeType, foodstuffId, addActivityDto, user._id, month, stockType);
+  }
+
+  // ========== GET ROUTES (specific routes first, then dynamic) ==========
+
+  // Specific GET routes (must be before :id routes to avoid collision)
+  @Get('/names/foodstuffs/all')
+  @ApiOperation({ summary: 'Get all foodstuff names and units for CSV template' })
   async getAllNamesForCSV(@Param('storeType') storeType: string) {
+    console.log(storeType);
     return this.foodstuffsService.getAllFoodstuffsForCSV(storeType);
   }
 
@@ -85,6 +123,26 @@ export class FoodstuffsController {
     return this.foodstuffsService.generateReport(storeType, query);
   }
 
+  // Base GET route
+  @Get()
+  @ApiOperation({ summary: 'Get all foodstuffs with filtering and pagination' })
+  async getAllFoodstuffs(@Param('storeType') storeType: string, @Query() query: any) {
+    return this.foodstuffsService.getAllFoodstuffs(storeType, query);
+  }
+
+  // Dynamic GET routes with :id (must come after all specific routes)
+  @Get(':id/activities')
+  @ApiOperation({ summary: 'Get activity history for a specific foodstuff' })
+  @ApiResponse({ status: 200, description: 'Activities retrieved successfully', type: GetActivitiesResDto })
+  @ApiResponse({ status: 404, description: 'Foodstuff not found' })
+  async getActivities(
+    @Param('storeType') storeType: string,
+    @Param('id') foodstuffId: string,
+    @Query(ValidationPipe) query: GetActivitiesReqDto,
+  ): Promise<GetActivitiesResDto> {
+    return this.foodstuffsService.getActivities(storeType, foodstuffId, query);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific foodstuff by ID' })
   @ApiResponse({ status: 200, description: 'Foodstuff retrieved successfully', type: GetFoodstuffResDto })
@@ -92,6 +150,8 @@ export class FoodstuffsController {
   async getFoodstuffById(@Param('storeType') storeType: string, @Param('id') id: string) {
     return this.foodstuffsService.getFoodstuffById(storeType, id);
   }
+
+  // ========== PUT/DELETE ROUTES (dynamic only) ==========
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a foodstuff' })
@@ -112,55 +172,5 @@ export class FoodstuffsController {
   @ApiResponse({ status: 400, description: 'Cannot delete foodstuff with existing activities' })
   async deleteFoodstuff(@Param('storeType') storeType: string, @Param('id') id: string): Promise<DeleteFoodstuffResDto> {
     return this.foodstuffsService.deleteFoodstuff(storeType, id);
-  }
-
-  // Activity Management
-  @Post(':id/activities')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Add activity to foodstuff (purchase, usage, wastage, correction)' })
-  @ApiResponse({ status: 201, description: 'Activity added successfully', type: AddActivityResDto })
-  @ApiResponse({ status: 404, description: 'Foodstuff not found' })
-  async addActivity(
-    @Param('storeType') storeType: string,
-    @Param('id') foodstuffId: string,
-    @Query('stockType') stockType: string,
-    @Query('month') month: string,
-    @Body(ValidationPipe) addActivityDto: AddActivityReqDto,
-    @GetUser() user: any,
-  ): Promise<AddActivityResDto> {
-    return this.foodstuffsService.addActivity(storeType, foodstuffId, addActivityDto, user._id, month, stockType);
-  }
-
-  @Get(':id/activities')
-  @ApiOperation({ summary: 'Get activity history for a specific foodstuff' })
-  @ApiResponse({ status: 200, description: 'Activities retrieved successfully', type: GetActivitiesResDto })
-  @ApiResponse({ status: 404, description: 'Foodstuff not found' })
-  async getActivities(
-    @Param('storeType') storeType: string,
-    @Param('id') foodstuffId: string,
-    @Query(ValidationPipe) query: GetActivitiesReqDto,
-  ): Promise<GetActivitiesResDto> {
-    return this.foodstuffsService.getActivities(storeType, foodstuffId, query);
-  }
-
-  // Bulk Purchase Operations
-  @Post('bulk-purchase-by-name')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Create bulk purchase activities using foodstuff names',
-    description:
-      'This endpoint accepts an array of purchase items with foodstuff names and units. If a foodstuff does not exist, it will be created automatically. Names are matched case-insensitively to prevent duplicates.',
-  })
-  @ApiResponse({ status: 201, description: 'Bulk purchase completed successfully', type: BulkPurchaseByNameResDto })
-  @ApiResponse({ status: 400, description: 'Invalid request data' })
-  async bulkPurchaseByName(
-    @Param('storeType') storeType: string,
-    @Query('stockType') stockType: string,
-    @Query('month') month: string,
-    @Body(ValidationPipe) bulkPurchaseDto: BulkPurchaseByNameReqDto,
-    @GetUser() user: any,
-  ): Promise<BulkPurchaseByNameResDto> {
-    console.log(stockType, month);
-    return this.foodstuffsService.bulkPurchaseByName(storeType, bulkPurchaseDto, user._id, stockType, month);
   }
 }
