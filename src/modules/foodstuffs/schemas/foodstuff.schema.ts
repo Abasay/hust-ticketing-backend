@@ -8,6 +8,7 @@ export enum StoreType {
   KITCHEN = 'kitchen',
   GENERAL = 'general',
   MAIN_STORE = 'main_store',
+  INDOMIE = 'indomie',
 }
 
 export interface StockData {
