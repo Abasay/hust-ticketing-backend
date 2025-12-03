@@ -49,4 +49,4 @@ export class Foodstuff extends Document {
 export const FoodstuffSchema = SchemaFactory.createForClass(Foodstuff);
 
 // Create compound unique index: name + storeType
-FoodstuffSchema.index({ name: 1, storeType: 1 }, { unique: true });
+// FoodstuffSchema.index({ name: 1, storeType: 1 }, { unique: true });
