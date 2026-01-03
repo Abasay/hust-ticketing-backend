@@ -10,7 +10,7 @@ import { OrderStatus } from 'src/shared/constants';
 @Injectable()
 export class CronJobService {
   private readonly logger = new Logger(CronJobService.name);
-  private readonly pingUrl = 'https://hust-ticketing-backend.onrender.com';
+  private readonly pingUrl = 'https://hust-bursary-api.onrender.com/';
 
   constructor(
     private readonly httpService: HttpService,
