@@ -30,6 +30,7 @@ import { RedemptionsModule } from './modules/redemptions/redemptions.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { CronJobService } from './services/cron-job.service';
 import { FoodstuffsModule } from './modules/foodstuffs/foodstuffs.module';
+import { MedicalModule } from './modules/medical/medical.module';
 
 dotenv.config();
 @Module({
@@ -100,6 +101,8 @@ dotenv.config();
     ReportsModule,
     FoodstuffsModule,
     // Application Modules Go Here
+    // Medical records module
+    MedicalModule,
   ],
   controllers: [AppController],
   providers: [

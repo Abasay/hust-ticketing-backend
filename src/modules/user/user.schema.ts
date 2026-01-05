@@ -11,6 +11,7 @@ export enum UserRole {
   vendor = 'VENDOR',
   admin = 'ADMIN',
   storeManager = 'STORE_MANAGER',
+  medicalManager = 'MEDICAL_MANAGER',
 }
 
 @Schema({ timestamps: true })

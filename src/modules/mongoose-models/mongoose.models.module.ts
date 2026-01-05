@@ -15,6 +15,9 @@ import { CookedFoodSchema } from '../foodstuffs/schemas/cooked-food.schema';
 import { FoodstuffRequisitionSchema } from '../foodstuffs/schemas/foodstuff-requisition.schema';
 import { WalletSchema } from '../wallet/wallet.schema';
 import { OrderSchema } from '../foodstuffs/schemas/order.schema';
+import { StudentSchema } from '../medical/schemas/student.schema';
+import { MedicalRecordSchema } from '../medical/schemas/medical-record.schema';
+import { MedicalWalletSchema } from '../medical/schemas/medical-wallet.schema';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { OrderSchema } from '../foodstuffs/schemas/order.schema';
       { name: DatabaseModelNames.FOODSTUFF_REQUISITION, schema: FoodstuffRequisitionSchema },
       { name: DatabaseModelNames.WALLET, schema: WalletSchema },
       { name: DatabaseModelNames.ORDER, schema: OrderSchema },
+      { name: DatabaseModelNames.STUDENT, schema: StudentSchema },
+      { name: DatabaseModelNames.MEDICAL_RECORD, schema: MedicalRecordSchema },
+      { name: DatabaseModelNames.MEDICAL_WALLET, schema: MedicalWalletSchema },
     ]),
   ],
   exports: [MongooseModule],

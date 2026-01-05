@@ -12,4 +12,7 @@ export const Repositories = {
   FoodstuffRequisitionRepository: 'FoodstuffRequisitionRepository',
   WalletRepository: 'WalletRepository',
   OrderRepository: 'OrderRepository',
+  StudentRepository: 'StudentRepository',
+  MedicalRecordRepository: 'MedicalRecordRepository',
+  MedicalWalletRepository: 'MedicalWalletRepository',
 };

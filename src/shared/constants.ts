@@ -12,6 +12,9 @@ export enum DatabaseModelNames {
   FOODSTUFF_REQUISITION = 'FoodstuffRequisition',
   WALLET = 'Wallet',
   ORDER = 'Order',
+  STUDENT = 'Student',
+  MEDICAL_RECORD = 'MedicalRecord',
+  MEDICAL_WALLET = 'MedicalWallet',
 }
 
 export enum UserRole {
@@ -21,6 +24,7 @@ export enum UserRole {
   STUDENT = 'STUDENT',
   STAFF = 'STAFF',
   STORE_MANAGER = 'STORE_MANAGER',
+  MEDICAL_MANAGER = 'MEDICAL_MANAGER',
 }
 
 export enum AccountStatus {

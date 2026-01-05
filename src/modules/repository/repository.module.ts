@@ -75,6 +75,21 @@ import { DatabaseModelNames } from 'src/shared/constants';
       useFactory: (orderModel) => new BaseRepository(orderModel),
       inject: [getModelToken(DatabaseModelNames.ORDER)],
     },
+    {
+      provide: Repositories.StudentRepository,
+      useFactory: (studentModel) => new BaseRepository(studentModel),
+      inject: [getModelToken(DatabaseModelNames.STUDENT)],
+    },
+    {
+      provide: Repositories.MedicalRecordRepository,
+      useFactory: (medicalRecordModel) => new BaseRepository(medicalRecordModel),
+      inject: [getModelToken(DatabaseModelNames.MEDICAL_RECORD)],
+    },
+    {
+      provide: Repositories.MedicalWalletRepository,
+      useFactory: (medicalWalletModel) => new BaseRepository(medicalWalletModel),
+      inject: [getModelToken(DatabaseModelNames.MEDICAL_WALLET)],
+    },
   ],
   exports: [...Object.values(Repositories)],
 })
