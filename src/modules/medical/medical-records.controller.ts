@@ -7,7 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from 'src/shared/constants';
 import { CreateMedicalRecordDto } from './dtos/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dtos/update-medical-record.dto';
-
+import { GetUser } from '../auth/decorators/get-user.decorator';
 @ApiTags('Medical')
 @ApiBearerAuth()
 @UseGuards(JwtUserAuthGuard, RolesGuard)
@@ -23,6 +23,14 @@ export class MedicalRecordsController {
     return this.medicalService.getMedicalRecords(studentId, query);
   }
 
+  @Get('medical-records')
+  @Roles(UserRole.ADMIN, UserRole.MEDICAL_MANAGER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get all medical records with student populated' })
+  async getAllRecords(@Query(ValidationPipe) query: any) {
+    return this.medicalService.getAllMedicalRecords(query);
+  }
+
   @Get('medical-records/record/:recordId')
   @Roles(UserRole.ADMIN, UserRole.MEDICAL_MANAGER)
   @HttpCode(HttpStatus.OK)
@@ -35,8 +43,8 @@ export class MedicalRecordsController {
   @Roles(UserRole.ADMIN, UserRole.MEDICAL_MANAGER)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Add new medical record' })
-  async addRecord(@Body(ValidationPipe) dto: CreateMedicalRecordDto) {
-    return this.medicalService.addMedicalRecord(dto);
+  async addRecord(@Body(ValidationPipe) dto: CreateMedicalRecordDto, @GetUser() user: any) {
+    return this.medicalService.addMedicalRecord(dto, user);
   }
 
   @Put('medical-records/:recordId')
@@ -44,6 +52,7 @@ export class MedicalRecordsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update medical record' })
   async updateRecord(@Param('recordId') recordId: string, @Body(ValidationPipe) dto: UpdateMedicalRecordDto) {
+    console.log(dto);
     return this.medicalService.updateMedicalRecord(recordId, dto);
   }
 
@@ -51,15 +60,15 @@ export class MedicalRecordsController {
   @Roles(UserRole.ADMIN, UserRole.MEDICAL_MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete medical record' })
-  async deleteRecord(@Param('recordId') recordId: string) {
-    return this.medicalService.deleteMedicalRecord(recordId);
+  async deleteRecord(@Param('recordId') recordId: string, @Query('session') session?: string) {
+    return this.medicalService.deleteMedicalRecord(recordId, session);
   }
 
   @Get('medical-records/statistics/:studentId')
   @Roles(UserRole.ADMIN, UserRole.MEDICAL_MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get medical record statistics for student' })
-  async getStats(@Param('studentId') studentId: string) {
-    return this.medicalService.getMedicalStatistics(studentId);
+  async getStats(@Param('studentId') studentId: string, @Query(ValidationPipe) query?: any) {
+    return this.medicalService.getMedicalStatistics(studentId, query);
   }
 }

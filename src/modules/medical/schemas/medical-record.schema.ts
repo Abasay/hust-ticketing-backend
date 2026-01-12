@@ -38,6 +38,9 @@ export class MedicalRecord extends Document {
 
   @Prop({ required: true })
   walletBalanceAfter: number;
+
+  @Prop({ required: true })
+  session: string; // academic session e.g. 2023/2024
 }
 
 export const MedicalRecordSchema = SchemaFactory.createForClass(MedicalRecord);

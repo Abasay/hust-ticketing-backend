@@ -18,6 +18,7 @@ import { OrderSchema } from '../foodstuffs/schemas/order.schema';
 import { StudentSchema } from '../medical/schemas/student.schema';
 import { MedicalRecordSchema } from '../medical/schemas/medical-record.schema';
 import { MedicalWalletSchema } from '../medical/schemas/medical-wallet.schema';
+import { MedicalWalletHistorySchema } from '../medical/schemas/wallet-history.schema';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { MedicalWalletSchema } from '../medical/schemas/medical-wallet.schema';
       { name: DatabaseModelNames.STUDENT, schema: StudentSchema },
       { name: DatabaseModelNames.MEDICAL_RECORD, schema: MedicalRecordSchema },
       { name: DatabaseModelNames.MEDICAL_WALLET, schema: MedicalWalletSchema },
+      { name: DatabaseModelNames.MEDICAL_WALLET_HISTORY, schema: MedicalWalletHistorySchema },
     ]),
   ],
   exports: [MongooseModule],

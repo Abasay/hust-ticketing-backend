@@ -16,6 +16,10 @@ export class CreateMedicalRecordDto {
   dateTime: string;
 
   @IsOptional()
+  @IsString()
+  session?: string;
+
+  @IsOptional()
   @IsArray()
   medicinesPrescribed?: string[];
 

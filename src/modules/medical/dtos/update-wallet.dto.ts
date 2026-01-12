@@ -14,4 +14,8 @@ export class UpdateWalletDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  session?: string; // optional override for academic session
 }

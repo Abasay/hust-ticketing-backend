@@ -6,10 +6,13 @@ import { CreateStudentDto } from './dtos/create-student.dto';
 import { UpdateStudentDto } from './dtos/update-student.dto';
 import { CreateMedicalRecordDto } from './dtos/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from './dtos/update-medical-record.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { DatabaseModelNames } from 'src/shared/constants';
 import { Student } from './schemas/student.schema';
 import { MedicalWallet } from './schemas/medical-wallet.schema';
 import { MedicalRecord } from './schemas/medical-record.schema';
-import { Types } from 'mongoose';
+import { MedicalWalletHistory } from './schemas/wallet-history.schema';
 
 @Injectable()
 export class MedicalService {
@@ -17,6 +20,10 @@ export class MedicalService {
     @Inject(Repositories.StudentRepository) private readonly studentRepo: BaseRepository<Student>,
     @Inject(Repositories.MedicalWalletRepository) private readonly medicalWalletRepo: BaseRepository<MedicalWallet>,
     @Inject(Repositories.MedicalRecordRepository) private readonly medicalRecordRepo: BaseRepository<MedicalRecord>,
+    @Inject(Repositories.MedicalWalletHistoryRepository) private readonly medicalWalletHistoryRepo: BaseRepository<MedicalWalletHistory>,
+    @InjectModel(DatabaseModelNames.MEDICAL_WALLET) private readonly medicalWalletModel: Model<MedicalWallet>,
+    @InjectModel(DatabaseModelNames.MEDICAL_RECORD) private readonly medicalRecordModel: Model<MedicalRecord>,
+    @InjectModel(DatabaseModelNames.MEDICAL_WALLET_HISTORY) private readonly medicalWalletHistoryModel: Model<MedicalWalletHistory>,
   ) {}
 
   async createStudent(payload: CreateStudentDto) {
@@ -40,7 +47,7 @@ export class MedicalService {
   async updateStudent(studentId: string, payload: UpdateStudentDto) {
     const existing = await this.studentRepo.findById(studentId);
     if (!existing) throw new NotFoundException('Student not found');
-    return this.studentRepo.findOneAndUpdate({ _id: studentId }, { $set: payload }, { new: true });
+    return this.studentRepo.findOneAndUpdate({ _id: new Types.ObjectId(studentId) }, { $set: payload }, { new: true });
   }
 
   async getStudents(query: any) {
@@ -72,10 +79,14 @@ export class MedicalService {
     return student;
   }
 
-  async getStudentMedicalData(id: string) {
+  async getStudentMedicalData(id: string, query: any) {
     const student = await this.getStudentById(id);
     const wallet = await this.medicalWalletRepo.findOne({ studentId: new Types.ObjectId(id) });
-    const records = await this.medicalRecordRepo.findAll({ studentId: new Types.ObjectId(id) }, 0, 0, { dateTime: -1 });
+    let filter: any = {};
+
+    console.log(query);
+    if (query.session) filter.session = query.session;
+    const records = await this.medicalRecordRepo.findAll({ studentId: new Types.ObjectId(id), ...filter }, 0, 0, { dateTime: -1 });
     return { ...student.toObject(), wallet, medicalRecords: records };
   }
 
@@ -101,33 +112,85 @@ export class MedicalService {
     return wallet;
   }
 
-  async updateWalletBalance(studentId: string, dto: UpdateWalletDto) {
-    const wallet =
-      (await this.medicalWalletRepo.findOne({ studentId: new Types.ObjectId(studentId) })) ||
-      (await this.medicalWalletRepo.create({ studentId: new Types.ObjectId(studentId), balance: 0, lastUpdated: new Date() }));
-    const amount = Number(dto.amount) || 0;
-    let newBalance = wallet.balance || 0;
-    if (dto.transactionType === 'credit') {
-      newBalance = newBalance + amount;
-    } else {
-      newBalance = newBalance - amount;
+  private getAcademicSession(date: Date, override?: string) {
+    if (override) return override;
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    // Academic session starting from August to July next year
+    if (month >= 8) {
+      return `${year}/${year + 1}`;
     }
-    const updated = await this.medicalWalletRepo.findOneAndUpdate(
-      { studentId: new Types.ObjectId(studentId) },
-      { $set: { balance: newBalance, lastUpdated: new Date() } },
-    );
+    return `${year - 1}/${year}`;
+  }
+
+  async updateWalletBalance(studentId: string, dto: UpdateWalletDto, user?: any) {
+    const studentObjId = new Types.ObjectId(studentId);
+    let wallet = await this.medicalWalletModel.findOne({ studentId: studentObjId });
+    if (!wallet) {
+      wallet = await this.medicalWalletModel.create({ studentId: studentObjId, balance: 0, lastUpdated: new Date() });
+    }
+
+    const amount = Number(dto.amount) || 0;
+    const before = wallet.balance || 0;
+    const after = dto.transactionType === 'credit' ? before + amount : before - amount;
+    await this.medicalWalletModel.updateOne({ _id: wallet._id }, { $set: { balance: after, lastUpdated: new Date() } });
+
+    const sessionStr = this.getAcademicSession(new Date(), dto['session']);
+
+    // create wallet history
+    await this.medicalWalletHistoryModel.create({
+      studentId: studentObjId,
+      amount: amount,
+      balanceBefore: before,
+      balanceAfter: after,
+      transactionType: dto.transactionType,
+      reason: dto.reason,
+      notes: dto['notes'],
+      createdBy: user?._id ? new Types.ObjectId(user._id) : undefined,
+      session: sessionStr,
+    });
+
+    const updated = await this.medicalWalletModel.findOne({ studentId: studentObjId });
     return updated;
   }
 
   async getMedicalRecords(studentId: string, query: any) {
+    console.log(query);
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
     const sortBy = query.sortBy || 'dateTime';
     const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
     const sort = { [sortBy]: sortOrder };
-    const filter: any = { studentId };
+    const filter: any = { studentId: new Types.ObjectId(studentId) };
+    if (query.session) filter.session = query.session;
     const records = await this.medicalRecordRepo.findAll(filter, skip, limit, sort);
+    const total = await this.medicalRecordRepo.count(filter);
+    return { records, total, totalPages: Math.ceil(total / limit), currentPage: page };
+  }
+
+  async getAllMedicalRecords(query: any) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy || 'dateTime';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sort = { [sortBy]: sortOrder };
+    const filter: any = {};
+    if (query.session) filter.session = query.session;
+    if (query.studentId) filter.studentId = new Types.ObjectId(query.studentId);
+    if (query.search) {
+      const regex = new RegExp(query.search, 'i');
+      filter.$or = [{ illnessOrReason: regex }, { notes: regex }];
+    }
+
+    const records = await this.medicalRecordRepo.findAllAndPopulate(
+      filter,
+      { path: 'studentId', select: 'firstName lastName matricNo faculty department email phoneNumber' },
+      sort,
+      skip,
+      limit,
+    );
     const total = await this.medicalRecordRepo.count(filter);
     return { records, total, totalPages: Math.ceil(total / limit), currentPage: page };
   }
@@ -138,29 +201,61 @@ export class MedicalService {
     return rec;
   }
 
-  async addMedicalRecord(payload: CreateMedicalRecordDto) {
-    console.log('Reached here 1');
-    const wallet =
-      (await this.medicalWalletRepo.findOne({ studentId: new Types.ObjectId(payload.studentId) })) ||
-      (await this.medicalWalletRepo.create({ studentId: new Types.ObjectId(payload.studentId), balance: 0, lastUpdated: new Date() }));
-    console.log('Reached Here');
+  async getWalletHistory(studentId: string, query: any) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 1 : -1;
+    const sort = { [sortBy]: sortOrder };
+
+    const filter: any = { studentId: new Types.ObjectId(studentId) };
+    if (query.session) filter.session = query.session;
+
+    const histories = await this.medicalWalletHistoryRepo.findAll(filter, skip, limit, sort);
+    const total = await this.medicalWalletHistoryRepo.count(filter);
+    return { histories, total, totalPages: Math.ceil(total / limit), currentPage: page };
+  }
+
+  async addMedicalRecord(payload: CreateMedicalRecordDto, user?: any) {
+    const studentObjId = new Types.ObjectId(payload.studentId);
+    let wallet = await this.medicalWalletModel.findOne({ studentId: studentObjId });
+    if (!wallet) {
+      wallet = await this.medicalWalletModel.create({ studentId: studentObjId, balance: 0, lastUpdated: new Date() });
+    }
+
     const walletBalance = wallet.balance || 0;
     const amount = Number(payload.amount) || 0;
     const paymentStatus = walletBalance >= amount ? 'paid' : 'unpaid';
     const newBalance = walletBalance - amount;
-    await this.medicalWalletRepo.findOneAndUpdate(
-      { studentId: new Types.ObjectId(payload.studentId) },
-      { $set: { balance: newBalance, lastUpdated: new Date() } },
-    );
 
-    const record = await this.medicalRecordRepo.create({
+    await this.medicalWalletModel.updateOne({ _id: wallet._id }, { $set: { balance: newBalance, lastUpdated: new Date() } });
+
+    const recordSession = payload.session ?? this.getAcademicSession(new Date(payload.dateTime ? new Date(payload.dateTime) : new Date()));
+
+    // create wallet history entry
+    await this.medicalWalletHistoryModel.create({
+      studentId: studentObjId,
+      amount: amount,
+      balanceBefore: walletBalance,
+      balanceAfter: newBalance,
+      transactionType: 'medical',
+      reason: 'medical record payment',
+      notes: payload.notes,
+      createdBy: user?._id ? new Types.ObjectId(user._id) : undefined,
+      session: recordSession,
+    });
+
+    const created = await this.medicalRecordModel.create({
       ...payload,
-      studentId: new Types.ObjectId(payload.studentId),
+      studentId: studentObjId,
       walletBalanceAfter: newBalance,
       paymentStatus,
       dateTime: new Date(payload.dateTime),
+      session: recordSession,
     });
-    return record;
+
+    return created;
   }
 
   async updateMedicalRecord(recordId: string, payload: UpdateMedicalRecordDto) {
@@ -170,38 +265,77 @@ export class MedicalService {
     if (payload.amount && payload.amount !== existing.amount) {
       const diff = Number(payload.amount) - Number(existing.amount);
       // if amount increased, deduct diff; if decreased, credit back diff
-      const wallet = await this.medicalWalletRepo.findOne({ studentId: existing.studentId });
-      const current = wallet?.balance ?? 0;
+
+      let wallet = await this.medicalWalletModel.findOne({ studentId: existing.studentId });
+      if (!wallet) {
+        wallet = await this.medicalWalletModel.create({ studentId: existing.studentId, balance: 0, lastUpdated: new Date() });
+      }
+      const current = wallet.balance ?? 0;
       const newBalance = current - diff;
-      await this.medicalWalletRepo.findOneAndUpdate(
-        { studentId: existing.studentId },
-        { $set: { balance: newBalance, lastUpdated: new Date() } },
-      );
+      await this.medicalWalletModel.updateOne({ _id: wallet._id }, { $set: { balance: newBalance, lastUpdated: new Date() } });
+
+      const transType = diff > 0 ? 'debit' : 'credit';
+      const amountToRecord = Math.abs(diff);
+
+      const recordSession = payload.session ?? existing.session ?? this.getAcademicSession(new Date(existing.dateTime));
+
+      await this.medicalWalletHistoryModel.create({
+        studentId: existing.studentId,
+        amount: amountToRecord,
+        balanceBefore: current,
+        balanceAfter: newBalance,
+        transactionType: transType,
+        reason: 'medical record update',
+        notes: payload['notes'],
+        session: recordSession,
+      });
+
       payload['walletBalanceAfter'] = newBalance;
       payload['paymentStatus'] = newBalance >= 0 ? 'paid' : 'unpaid';
+      // propagate session to the record if provided
+      if (payload.session) payload['session'] = payload.session;
     }
 
     return this.medicalRecordRepo.findOneAndUpdate({ _id: recordId }, { $set: payload }, { new: true });
   }
 
-  async deleteMedicalRecord(recordId: string) {
+  async deleteMedicalRecord(recordId: string, overrideSession?: string) {
     const existing = await this.medicalRecordRepo.findById(recordId);
     if (!existing) throw new NotFoundException('Record not found');
     // reverse wallet by returning the amount
-    const wallet = await this.medicalWalletRepo.findOne({ studentId: existing.studentId });
-    const current = wallet?.balance ?? 0;
+
+    let wallet = await this.medicalWalletModel.findOne({ studentId: existing.studentId });
+    if (!wallet) {
+      wallet = await this.medicalWalletModel.create({ studentId: existing.studentId, balance: 0, lastUpdated: new Date() });
+    }
+    const current = wallet.balance ?? 0;
     const newBalance = current + Number(existing.amount);
-    await this.medicalWalletRepo.findOneAndUpdate(
-      { studentId: existing.studentId },
-      { $set: { balance: newBalance, lastUpdated: new Date() } },
-    );
+    await this.medicalWalletModel.updateOne({ _id: wallet._id }, { $set: { balance: newBalance, lastUpdated: new Date() } });
+
+    const recordSession = overrideSession ?? existing.session ?? this.getAcademicSession(new Date(existing.dateTime));
+
+    await this.medicalWalletHistoryModel.create({
+      studentId: existing.studentId,
+      amount: Number(existing.amount),
+      balanceBefore: current,
+      balanceAfter: newBalance,
+      transactionType: 'credit',
+      reason: 'medical record deletion reversal',
+      notes: existing.notes,
+      session: recordSession,
+    });
+
     await this.medicalRecordRepo.findByIdAndDelete(recordId);
+
     return { success: true, message: 'Medical record deleted successfully' };
   }
 
-  async getMedicalStatistics(studentId: string) {
-    const totalRecords = await this.medicalRecordRepo.count({ studentId });
-    const records = await this.medicalRecordRepo.findAll({ studentId }, 0, 0, { dateTime: -1 });
+  async getMedicalStatistics(studentId: string, query?: any) {
+    const filter: any = { studentId: new Types.ObjectId(studentId) };
+    if (query?.session) filter.session = query.session;
+
+    const totalRecords = await this.medicalRecordRepo.count(filter);
+    const records = await this.medicalRecordRepo.findAll(filter, 0, 0, { dateTime: -1 });
     const totalAmountSpent = records.reduce((s, r) => s + (r.amount || 0), 0);
     const paidRecords = records.filter((r) => r.paymentStatus === 'paid').length;
     const unpaidRecords = records.filter((r) => r.paymentStatus === 'unpaid').length;

@@ -35,8 +35,8 @@ export class StudentsController {
   @Roles(UserRole.ADMIN, UserRole.MEDICAL_MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get student medical data (wallet + records)' })
-  async getStudentMedicalData(@Param('id') id: string) {
-    return this.medicalService.getStudentMedicalData(id);
+  async getStudentMedicalData(@Param('id') id: string, @Query(ValidationPipe) query: any) {
+    return this.medicalService.getStudentMedicalData(id, query);
   }
 
   @Post('students')

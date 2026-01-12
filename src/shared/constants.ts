@@ -15,6 +15,7 @@ export enum DatabaseModelNames {
   STUDENT = 'Student',
   MEDICAL_RECORD = 'MedicalRecord',
   MEDICAL_WALLET = 'MedicalWallet',
+  MEDICAL_WALLET_HISTORY = 'MedicalWalletHistory',
 }
 
 export enum UserRole {

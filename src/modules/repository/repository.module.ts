@@ -90,6 +90,11 @@ import { DatabaseModelNames } from 'src/shared/constants';
       useFactory: (medicalWalletModel) => new BaseRepository(medicalWalletModel),
       inject: [getModelToken(DatabaseModelNames.MEDICAL_WALLET)],
     },
+    {
+      provide: Repositories.MedicalWalletHistoryRepository,
+      useFactory: (medicalWalletHistoryModel) => new BaseRepository(medicalWalletHistoryModel),
+      inject: [getModelToken(DatabaseModelNames.MEDICAL_WALLET_HISTORY)],
+    },
   ],
   exports: [...Object.values(Repositories)],
 })
