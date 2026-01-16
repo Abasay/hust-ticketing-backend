@@ -15,7 +15,7 @@ export class PurchaseItemByNameDto {
 
   @ApiProperty({ description: 'Quantity purchased (must be positive)' })
   @IsNumber()
-  @Min(0.01)
+  @Min(0)
   quantityChanged: number;
 
   @ApiProperty({ description: 'Unit cost for this purchase' })
