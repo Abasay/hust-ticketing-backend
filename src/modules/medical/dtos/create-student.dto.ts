@@ -60,4 +60,29 @@ export class CreateStudentDto {
   @IsOptional()
   @IsString()
   emergencyContactPhone?: string;
+
+  // New fields
+  @IsOptional()
+  @IsString()
+  otherNames?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  placeOfUsualDomicile?: string;
+
+  @IsOptional()
+  @IsString()
+  nationality?: string;
+
+  @IsOptional()
+  @IsString()
+  ethnicity?: string;
+
+  @IsOptional()
+  @IsString()
+  religion?: string;
 }

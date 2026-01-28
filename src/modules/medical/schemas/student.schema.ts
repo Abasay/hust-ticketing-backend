@@ -49,6 +49,24 @@ export class Student extends Document {
 
   @Prop({ required: false })
   emergencyContactPhone?: string;
+
+  @Prop({ required: false })
+  otherNames?: string;
+
+  @Prop({ required: false })
+  address?: string;
+
+  @Prop({ required: false })
+  placeOfUsualDomicile?: string;
+
+  @Prop({ required: false })
+  nationality?: string;
+
+  @Prop({ required: false })
+  ethnicity?: string;
+
+  @Prop({ required: false })
+  religion?: string;
 }
 
 export const StudentSchema = SchemaFactory.createForClass(Student);

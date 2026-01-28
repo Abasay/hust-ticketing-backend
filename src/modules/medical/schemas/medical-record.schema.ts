@@ -12,10 +12,7 @@ export class MedicalRecord extends Document {
   @Prop({ required: true })
   illnessOrReason: string;
 
-  @Prop({ required: true })
-  amount: number;
-
-  @Prop({ required: true })
+  @Prop({ required: false })
   dateTime: Date;
 
   @Prop({ type: [String], default: [] })
@@ -32,6 +29,53 @@ export class MedicalRecord extends Document {
 
   @Prop({ required: false })
   notes?: string;
+
+  // Medical Record Components - All optional with their own fees
+  @Prop({ required: false })
+  registrationFee?: number;
+
+  @Prop({ required: false })
+  medicalReportFee?: number;
+
+  @Prop({ required: false })
+  laboratoryTestFee?: number;
+
+  @Prop({ required: false })
+  bedFee?: number;
+
+  @Prop({ required: false })
+  consultationFee?: number;
+
+  @Prop({ required: false })
+  surgicalProcedureFee?: number;
+
+  @Prop({ required: false })
+  medicalProcedureFee?: number;
+
+  @Prop({ required: false })
+  admissionFee?: number;
+
+  @Prop({ required: false })
+  medicalAndNursingCareFee?: number;
+
+  @Prop({ required: false })
+  consumablesFee?: number;
+
+  @Prop({ required: false })
+  feedingFee?: number;
+
+  @Prop({ required: false })
+  referralFee?: number;
+
+  @Prop({ required: false })
+  ambulanceServicesFee?: number;
+
+  @Prop({ required: false })
+  othersFee?: number;
+
+  // Total calculation
+  @Prop({ required: true, default: 0 })
+  totalAmount: number;
 
   @Prop({ required: true, enum: ['paid', 'unpaid'] })
   paymentStatus: 'paid' | 'unpaid';

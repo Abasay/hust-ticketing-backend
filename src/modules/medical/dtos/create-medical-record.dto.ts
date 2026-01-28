@@ -9,12 +9,68 @@ export class CreateMedicalRecordDto {
   @IsNotEmpty()
   illnessOrReason: string;
 
-  @IsNumber()
-  amount: number;
-
+  @IsOptional()
   @IsDateString()
-  dateTime: string;
+  dateTime?: string;
 
+  // Medical Record Fee Components - All optional
+  @IsOptional()
+  @IsNumber()
+  registrationFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  medicalReportFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  laboratoryTestFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  bedFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  consultationFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  surgicalProcedureFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  medicalProcedureFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  admissionFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  medicalAndNursingCareFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  consumablesFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  feedingFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  referralFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  ambulanceServicesFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  othersFee?: number;
+
+  // Other optional fields
   @IsOptional()
   @IsString()
   session?: string;

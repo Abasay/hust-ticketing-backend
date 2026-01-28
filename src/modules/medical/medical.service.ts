@@ -225,9 +225,10 @@ export class MedicalService {
     }
 
     const walletBalance = wallet.balance || 0;
-    const amount = Number(payload.amount) || 0;
-    const paymentStatus = walletBalance >= amount ? 'paid' : 'unpaid';
-    const newBalance = walletBalance - amount;
+    // Calculate totalAmount from all fee components
+    const totalAmount = this.calculateTotalAmount(payload);
+    const paymentStatus = walletBalance >= totalAmount ? 'paid' : 'unpaid';
+    const newBalance = walletBalance - totalAmount;
 
     await this.medicalWalletModel.updateOne({ _id: wallet._id }, { $set: { balance: newBalance, lastUpdated: new Date() } });
 
@@ -236,7 +237,7 @@ export class MedicalService {
     // create wallet history entry
     await this.medicalWalletHistoryModel.create({
       studentId: studentObjId,
-      amount: amount,
+      amount: totalAmount,
       balanceBefore: walletBalance,
       balanceAfter: newBalance,
       transactionType: 'medical',
@@ -251,7 +252,8 @@ export class MedicalService {
       studentId: studentObjId,
       walletBalanceAfter: newBalance,
       paymentStatus,
-      dateTime: new Date(payload.dateTime),
+      totalAmount,
+      dateTime: new Date(payload.dateTime || ''),
       session: recordSession,
     });
 
@@ -262,8 +264,11 @@ export class MedicalService {
     const existing = await this.medicalRecordRepo.findById(recordId);
     if (!existing) throw new NotFoundException('Record not found');
 
-    if (payload.amount && payload.amount !== existing.amount) {
-      const diff = Number(payload.amount) - Number(existing.amount);
+    // Calculate new total from payload if any fee components are provided
+    const hasChanges = this.hasFeeChanges(payload);
+    if (hasChanges) {
+      const newTotal = this.calculateTotalAmountForUpdate(payload, existing);
+      const diff = newTotal - (existing.totalAmount || 0);
       // if amount increased, deduct diff; if decreased, credit back diff
 
       let wallet = await this.medicalWalletModel.findOne({ studentId: existing.studentId });
@@ -291,7 +296,9 @@ export class MedicalService {
       });
 
       payload['walletBalanceAfter'] = newBalance;
-      payload['paymentStatus'] = newBalance >= 0 ? 'paid' : 'unpaid';
+      const currentWallet = wallet.balance ?? 0;
+      payload['paymentStatus'] = currentWallet - diff >= 0 ? 'paid' : 'unpaid';
+      payload['totalAmount'] = newTotal;
       // propagate session to the record if provided
       if (payload.session) payload['session'] = payload.session;
     }
@@ -302,21 +309,21 @@ export class MedicalService {
   async deleteMedicalRecord(recordId: string, overrideSession?: string) {
     const existing = await this.medicalRecordRepo.findById(recordId);
     if (!existing) throw new NotFoundException('Record not found');
-    // reverse wallet by returning the amount
+    // reverse wallet by returning the totalAmount
 
     let wallet = await this.medicalWalletModel.findOne({ studentId: existing.studentId });
     if (!wallet) {
       wallet = await this.medicalWalletModel.create({ studentId: existing.studentId, balance: 0, lastUpdated: new Date() });
     }
     const current = wallet.balance ?? 0;
-    const newBalance = current + Number(existing.amount);
+    const newBalance = current + Number(existing.totalAmount || 0);
     await this.medicalWalletModel.updateOne({ _id: wallet._id }, { $set: { balance: newBalance, lastUpdated: new Date() } });
 
     const recordSession = overrideSession ?? existing.session ?? this.getAcademicSession(new Date(existing.dateTime));
 
     await this.medicalWalletHistoryModel.create({
       studentId: existing.studentId,
-      amount: Number(existing.amount),
+      amount: Number(existing.totalAmount || 0),
       balanceBefore: current,
       balanceAfter: newBalance,
       transactionType: 'credit',
@@ -336,7 +343,7 @@ export class MedicalService {
 
     const totalRecords = await this.medicalRecordRepo.count(filter);
     const records = await this.medicalRecordRepo.findAll(filter, 0, 0, { dateTime: -1 });
-    const totalAmountSpent = records.reduce((s, r) => s + (r.amount || 0), 0);
+    const totalAmountSpent = records.reduce((s, r) => s + (r.totalAmount || 0), 0);
     const paidRecords = records.filter((r) => r.paymentStatus === 'paid').length;
     const unpaidRecords = records.filter((r) => r.paymentStatus === 'unpaid').length;
     const commonIllnesses = Object.entries(
@@ -347,5 +354,71 @@ export class MedicalService {
     ).map(([illness, count]) => ({ illness, count }));
     const lastVisit = records[0]?.dateTime ?? null;
     return { totalRecords, totalAmountSpent, paidRecords, unpaidRecords, commonIllnesses, lastVisit };
+  }
+
+  // Helper method to calculate total amount from fee components
+  private calculateTotalAmount(payload: CreateMedicalRecordDto): number {
+    const fees = [
+      'registrationFee',
+      'medicalReportFee',
+      'laboratoryTestFee',
+      'bedFee',
+      'consultationFee',
+      'surgicalProcedureFee',
+      'medicalProcedureFee',
+      'admissionFee',
+      'medicalAndNursingCareFee',
+      'consumablesFee',
+      'feedingFee',
+      'referralFee',
+      'ambulanceServicesFee',
+      'othersFee',
+    ];
+    return fees.reduce((sum, fee) => sum + (Number(payload[fee]) || 0), 0);
+  }
+
+  // Helper method to check if any fee components have changed
+  private hasFeeChanges(payload: UpdateMedicalRecordDto): boolean {
+    const feeFields = [
+      'registrationFee',
+      'medicalReportFee',
+      'laboratoryTestFee',
+      'bedFee',
+      'consultationFee',
+      'surgicalProcedureFee',
+      'medicalProcedureFee',
+      'admissionFee',
+      'medicalAndNursingCareFee',
+      'consumablesFee',
+      'feedingFee',
+      'referralFee',
+      'ambulanceServicesFee',
+      'othersFee',
+    ];
+    return feeFields.some((field) => payload[field] !== undefined);
+  }
+
+  // Helper method to calculate total for update operation
+  private calculateTotalAmountForUpdate(payload: UpdateMedicalRecordDto, existing: MedicalRecord): number {
+    const fees = [
+      'registrationFee',
+      'medicalReportFee',
+      'laboratoryTestFee',
+      'bedFee',
+      'consultationFee',
+      'surgicalProcedureFee',
+      'medicalProcedureFee',
+      'admissionFee',
+      'medicalAndNursingCareFee',
+      'consumablesFee',
+      'feedingFee',
+      'referralFee',
+      'ambulanceServicesFee',
+      'othersFee',
+    ];
+    return fees.reduce((sum, fee) => {
+      const newValue = payload[fee] !== undefined ? Number(payload[fee]) : existing[fee] || 0;
+      return sum + newValue;
+    }, 0);
   }
 }
