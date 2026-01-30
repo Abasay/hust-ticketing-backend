@@ -31,9 +31,19 @@ export class MedicalService {
       throw new BadRequestException('Either matricNo or temporaryMatricNo is required');
     }
 
-    const existing = await this.studentRepo.findOne({
-      $or: [{ matricNo: payload.matricNo }, { temporaryMatricNo: payload.temporaryMatricNo }],
-    });
+    let existing;
+
+    if (payload.matricNo)
+      existing = await this.studentRepo.findOne({
+        matricNo: payload.matricNo,
+      });
+    else {
+      existing = await this.studentRepo.findOne({
+        temporaryMatricNo: payload.temporaryMatricNo,
+      });
+    }
+
+    console.log(existing);
     if (existing) throw new BadRequestException('Student already exists');
 
     // create student
