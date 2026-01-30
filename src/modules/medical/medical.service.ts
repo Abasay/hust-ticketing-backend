@@ -40,7 +40,7 @@ export class MedicalService {
 
     const student = await this.studentRepo.create(payload as any);
     // create wallet
-    await this.medicalWalletRepo.create({ studentId: student._id as any, balance: 0, lastUpdated: new Date() });
+    await this.medicalWalletRepo.create({ studentId: student._id as any, balance: 50000, lastUpdated: new Date() });
     return student;
   }
 
