@@ -222,9 +222,9 @@ export class FoodstuffsService {
 
     // Check for negative stock
     const newQuantity = foodstuff.currentQuantity + addActivityDto.quantityChanged;
-    if (newQuantity < 0) {
-      throw new BadRequestException('Insufficient stock for this operation');
-    }
+    // if (newQuantity < 0) {
+    //   throw new BadRequestException('Insufficient stock for this operation');
+    // }
 
     // Create activity record
     const activityData: any = {
@@ -266,7 +266,9 @@ export class FoodstuffsService {
 
     // Update average cost for purchases
     if (addActivityDto.actionType === ActionType.PURCHASE && addActivityDto.quantityChanged > 0) {
-      const totalValue = foodstuff.currentQuantity * foodstuff.averageCostPrice + (addActivityDto?.totalCost || 0);
+      const totalValue =
+        foodstuff.currentQuantity * (foodstuff.averageCostPrice > 0 ? foodstuff.averageCostPrice : addActivityDto.unitCost || 0) +
+        (addActivityDto?.totalCost || 0);
       updatedData.averageCostPrice = totalValue / newQuantity;
     }
 
