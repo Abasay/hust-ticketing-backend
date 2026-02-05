@@ -35,9 +35,9 @@ export class OrdersService {
 
   private async generateOrderId(): Promise<string> {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    const length = 6;
+    const length = 3;
 
-    const existingOrders = await this.orderRepository.findAll({});
+    // const existingOrders = await this.orderRepository.findAll({});
 
     // Convert string to array to allow splicing (for no repetition)
     const charsArray = chars.split('');
@@ -49,7 +49,7 @@ export class OrdersService {
       charsArray.splice(randIndex, 1); // remove picked char to avoid repetition
     }
 
-    while (existingOrders.find((ord) => ord.orderId === order)) {
+    while (await this.orderRepository.findOne({ orderId: order })) {
       order = await this.generateOrderId();
     }
 
