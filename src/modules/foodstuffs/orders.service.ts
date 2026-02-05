@@ -35,7 +35,7 @@ export class OrdersService {
 
   private async generateOrderId(): Promise<string> {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    const length = 5;
+    const length = 6;
 
     const existingOrders = await this.orderRepository.findAll({});
 
